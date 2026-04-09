@@ -6,7 +6,7 @@ export function Step5Confirm() {
   const { state, dispatch } = usePayout();
   const realPlayers = state.players.filter(p => !p.isPro);
   const proCount = state.players.filter(p => p.isPro).length;
-  const isOver32 = realPlayers.length >= state.rules.playerThreshold;
+  const isOver32 = realPlayers.length >= state.rules.playerThreshold; // used for KP prize
 
   const handleCalculate = () => {
     const results = calculatePayouts(
@@ -50,8 +50,8 @@ export function Step5Confirm() {
           <div>
             <span className="text-text-dim uppercase tracking-wide text-xs">Payout Depth</span>
             <div className="text-text font-medium">
-              Top {isOver32 ? state.rules.splitsOver.length : state.rules.splitsUnder.length}{' '}
-              ({(isOver32 ? state.rules.splitsOver : state.rules.splitsUnder).join('/')}%)
+              Top {state.rules.splits.length}{' '}
+              ({state.rules.splits.join('/')}%)
             </div>
           </div>
         </div>
@@ -64,14 +64,15 @@ export function Step5Confirm() {
             </div>
           )}
           <div className="text-text-muted">
-            Slots: {state.slotTeams.slice(0, isOver32 ? 3 : 2).map(t =>
+            Slots: {state.slotTeams.slice(0, state.rules.splits.length).map(t =>
               `#${t.place} ${t.players.map(p => p.name.split(', ')[0]).join('/')}`
             ).join(' • ')}
           </div>
           <div className="text-text-muted">
-            Par Points: {state.parPointWinners.slice(0, isOver32 ? 3 : 2).map(w =>
-              `${w.place === 1 ? '1st' : w.place === 2 ? '2nd' : '3rd'} ${w.player}`
-            ).join(' • ')}
+            Par Points: {state.parPointWinners.slice(0, state.rules.splits.length).map(w => {
+              const labels = ['1st', '2nd', '3rd', '4th', '5th'];
+              return `${labels[w.place - 1]} ${w.player}`;
+            }).join(' • ')}
           </div>
           <div className="text-text-muted">
             KPs: {state.kpWinners.length > 0

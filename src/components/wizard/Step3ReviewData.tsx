@@ -1,9 +1,17 @@
 import { usePayout } from '@/context/PayoutContext';
+import { SPLIT_PRESETS, getDefaultPlaces } from '@/lib/rules/defaults';
+import { formatPlace } from '@/lib/format';
 
 export function Step3ReviewData() {
   const { state, dispatch } = usePayout();
   const realPlayers = state.players.filter(p => !p.isPro);
   const proPlayers = state.players.filter(p => p.isPro);
+  const currentPlaces = state.rules.splits.length;
+  const defaultPlaces = getDefaultPlaces(realPlayers.length);
+
+  const setPlaces = (n: number) => {
+    dispatch({ type: 'SET_RULES', payload: { ...state.rules, splits: SPLIT_PRESETS[n] } });
+  };
 
   return (
     <div className="space-y-6">
@@ -68,7 +76,7 @@ export function Step3ReviewData() {
             <div key={w.place} className="flex items-center justify-between px-3 py-1.5 text-sm">
               <span>
                 <span className="text-teal font-semibold mr-2">
-                  {w.place === 1 ? '1st' : w.place === 2 ? '2nd' : '3rd'}
+                  {formatPlace(w.place)}
                 </span>
                 {w.player}
               </span>
@@ -101,6 +109,34 @@ export function Step3ReviewData() {
             <span className="text-text-muted"> — takes entire deuce pot</span>
           </div>
         )}
+      </div>
+
+      {/* Places to Pay */}
+      <div className="bg-card rounded-xl p-4 border border-border">
+        <h3 className="text-sm font-medium text-text-muted uppercase tracking-wide mb-3">
+          Places to Pay
+          <span className="text-text-dim text-xs ml-2 normal-case">
+            (default: {defaultPlaces} for {realPlayers.length} players)
+          </span>
+        </h3>
+        <div className="flex gap-2">
+          {[2, 3, 4, 5].map(n => (
+            <button
+              key={n}
+              onClick={() => setPlaces(n)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                currentPlaces === n
+                  ? 'bg-teal text-background'
+                  : 'bg-card-highlight text-text-muted hover:text-text border border-border-accent'
+              }`}
+            >
+              Top {n}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 text-text-dim text-xs">
+          Split: {state.rules.splits.join(' / ')}%
+        </div>
       </div>
 
       <div className="flex gap-3">

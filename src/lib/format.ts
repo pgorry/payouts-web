@@ -7,6 +7,11 @@ export function formatNet(amount: number): string {
   return `-${formatCurrency(Math.abs(amount))}`;
 }
 
+const ORDINALS = ['1st', '2nd', '3rd', '4th', '5th'];
+export function formatPlace(place: number): string {
+  return ORDINALS[place - 1] ?? `${place}th`;
+}
+
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr + 'T12:00:00');
   return date.toLocaleDateString('en-US', {

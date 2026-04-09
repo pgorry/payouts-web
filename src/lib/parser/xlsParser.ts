@@ -65,7 +65,7 @@ function extractParPointWinners(sheet: XLSX.WorkSheet | undefined): ParPointWinn
 
   return realPlayers
     .sort((a, b) => (b.parPoints ?? 0) - (a.parPoints ?? 0))
-    .slice(0, 3)
+    .slice(0, 5)
     .map((p, i) => ({
       place: i + 1,
       player: p.name,

@@ -3,12 +3,10 @@ import type { SlotTeam, SlotResult, RulesConfig } from '@/types';
 export function calculateSlots(
   teams: SlotTeam[],
   slotsPool: number,
-  playerCount: number,
+  _playerCount: number,
   rules: RulesConfig,
 ): SlotResult[] {
-  const splits = playerCount >= rules.playerThreshold
-    ? rules.splitsOver
-    : rules.splitsUnder;
+  const splits = rules.splits;
 
   const placingTeams = teams.slice(0, splits.length);
 

@@ -7,6 +7,7 @@ export function Step2DataEntry() {
   const { state, dispatch } = usePayout();
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleFileLoaded = (buffer: ArrayBuffer, fileName: string) => {
     try {
@@ -49,6 +50,33 @@ export function Step2DataEntry() {
 
       <FileDropZone onFileLoaded={handleFileLoaded} />
 
+      <div className="flex items-center gap-3">
+        <a
+          href="https://www.golfgenius.com/leagues/11530790049666839684/rounds/12429475748304139773/v2tournaments"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-teal text-sm hover:underline"
+        >
+          Open Golf Genius Leaderboard
+        </a>
+        <button
+          onClick={() => setShowHelp(h => !h)}
+          className="text-text-dim text-sm hover:text-teal transition-colors"
+        >
+          {showHelp ? 'Hide help' : 'How to export XLS?'}
+        </button>
+      </div>
+
+      {showHelp && (
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <img
+            src="export-help.png"
+            alt="How to export XLS from Golf Genius: click Re-score/Print/Adjust Leaderboard, then Export XLS"
+            className="w-full"
+          />
+        </div>
+      )}
+
       {error && (
         <div className="bg-red/10 border border-red/30 rounded-lg px-4 py-3 text-red">
           {error}
@@ -87,21 +115,13 @@ export function Step2DataEntry() {
         </div>
       )}
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => dispatch({ type: 'GO_TO_STEP', payload: 1 })}
-          className="bg-card border border-border-accent text-text-muted font-medium px-6 py-3 rounded-lg hover:border-teal/50 transition-colors"
-        >
-          ← Back
-        </button>
-        <button
-          onClick={() => dispatch({ type: 'GO_TO_STEP', payload: 3 })}
-          disabled={!state.xlsLoaded && state.players.length === 0}
-          className="bg-teal text-background font-semibold px-6 py-3 rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          Next →
-        </button>
-      </div>
+      <button
+        onClick={() => dispatch({ type: 'GO_TO_STEP', payload: 2 })}
+        disabled={!state.xlsLoaded && state.players.length === 0}
+        className="bg-teal text-background font-semibold px-6 py-3 rounded-lg hover:bg-teal/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Next →
+      </button>
     </div>
   );
 }

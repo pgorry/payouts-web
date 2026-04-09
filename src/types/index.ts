@@ -54,8 +54,7 @@ export interface RulesConfig {
   slotsPercent: number;
   parPointsPercent: number;
   playerThreshold: number;
-  splitsUnder: number[];
-  splitsOver: number[];
+  splits: number[];
 }
 
 // --- Output types ---

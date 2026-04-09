@@ -25,7 +25,7 @@ export const ChargesCard = forwardRef<HTMLDivElement, ChargesCardProps>(
               {formatDate(results.date)} • {pool.playerCount} Players
             </div>
           </div>
-          <img src="/UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
+          <img src="UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
         </div>
         {results.kpReturnedToPot > 0 && (
           <div className="text-text-muted text-xs italic mb-4">

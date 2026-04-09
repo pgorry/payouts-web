@@ -105,22 +105,12 @@ export function RulesSidePanel() {
       </RuleRow>
 
       {/* Payout Splits */}
-      <RuleRow label="Under 32 Split" editing={isEditing}>
+      <RuleRow label="Payout Split" editing={isEditing}>
         {isEditing ? (
-          <SplitInput splits={rules.splitsUnder} onChange={(v) => updateRule('splitsUnder', v)} />
+          <SplitInput splits={rules.splits} onChange={(v) => updateRule('splits', v)} />
         ) : (
           <span className="text-text font-medium text-sm">
-            Top {rules.splitsUnder.length}: {rules.splitsUnder.join('/')}%
-          </span>
-        )}
-      </RuleRow>
-
-      <RuleRow label="32+ Split" editing={isEditing}>
-        {isEditing ? (
-          <SplitInput splits={rules.splitsOver} onChange={(v) => updateRule('splitsOver', v)} />
-        ) : (
-          <span className="text-text font-medium text-sm">
-            Top {rules.splitsOver.length}: {rules.splitsOver.join('/')}%
+            Top {rules.splits.length}: {rules.splits.join('/')}%
           </span>
         )}
       </RuleRow>

@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
 import type { PayoutResults } from '@/types';
-import { formatCurrency, formatDate } from '@/lib/format';
+import { formatCurrency, formatDate, formatPlace } from '@/lib/format';
 
 interface SummaryCardProps {
   results: PayoutResults;
@@ -25,7 +25,7 @@ export const SummaryCard = forwardRef<HTMLDivElement, SummaryCardProps>(
               {slots.some(s => s.players.some(p => p.isPro)) && ' (+ Pros)'}
             </div>
           </div>
-          <img src="/UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
+          <img src="UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
         </div>
 
         {/* Par Points */}
@@ -35,7 +35,7 @@ export const SummaryCard = forwardRef<HTMLDivElement, SummaryCardProps>(
             {parPoints.map((pp, i) => (
               <tr key={pp.place} className={i === 0 ? 'bg-card-highlight' : ''}>
                 <td className="py-2 px-3 text-text-muted">
-                  {pp.place === 1 ? '1st' : pp.place === 2 ? '2nd' : '3rd'}
+                  {formatPlace(pp.place)}
                 </td>
                 <td className="py-2 px-3">{pp.player}</td>
                 <td className="py-2 px-3 text-right font-semibold text-emerald">{formatCurrency(pp.payout)}</td>
@@ -56,7 +56,7 @@ export const SummaryCard = forwardRef<HTMLDivElement, SummaryCardProps>(
             {slots.map((slot, i) => (
               <tr key={slot.place} className={i === 0 ? 'bg-card-highlight' : ''}>
                 <td className="py-2 px-3 text-text-muted">
-                  {slot.place === 1 ? '1st' : slot.place === 2 ? '2nd' : '3rd'}
+                  {formatPlace(slot.place)}
                 </td>
                 <td className="py-2 px-3">
                   {slot.players.map((p, j) => (

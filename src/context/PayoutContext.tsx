@@ -9,7 +9,19 @@ import type {
   RulesConfig,
   PayoutResults,
 } from '@/types';
-import { DEFAULT_RULES } from '@/lib/rules/defaults';
+import { DEFAULT_RULES, getDefaultPlaces, SPLIT_PRESETS } from '@/lib/rules/defaults';
+
+function getPreviousSunday(): string {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday
+  const diff = day === 0 ? 0 : day;
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - diff);
+  const y = sunday.getFullYear();
+  const m = String(sunday.getMonth() + 1).padStart(2, '0');
+  const d = String(sunday.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
 
 export interface WizardState {
   currentStep: number;
@@ -39,7 +51,7 @@ type Action =
 
 const initialState: WizardState = {
   currentStep: 1,
-  round: { date: new Date().toISOString().split('T')[0], hasAce: false },
+  round: { date: getPreviousSunday(), hasAce: false },
   players: [],
   slotTeams: [],
   deuces: [],
@@ -54,7 +66,9 @@ function reducer(state: WizardState, action: Action): WizardState {
   switch (action.type) {
     case 'SET_ROUND':
       return { ...state, round: action.payload };
-    case 'SET_XLS_DATA':
+    case 'SET_XLS_DATA': {
+      const realCount = action.payload.players.filter(p => !p.isPro).length;
+      const defaultPlaces = getDefaultPlaces(realCount);
       return {
         ...state,
         players: action.payload.players,
@@ -62,7 +76,9 @@ function reducer(state: WizardState, action: Action): WizardState {
         deuces: action.payload.deuces,
         parPointWinners: action.payload.parPointWinners,
         xlsLoaded: true,
+        rules: { ...state.rules, splits: SPLIT_PRESETS[defaultPlaces] },
       };
+    }
     case 'SET_PLAYERS':
       return { ...state, players: action.payload };
     case 'SET_SLOT_TEAMS':

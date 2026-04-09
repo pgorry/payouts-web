@@ -6,6 +6,7 @@ import type {
   ParPointResult,
   PlayerCharge,
 } from '@/types';
+import { formatPlace } from '@/lib/format';
 
 export function calculateCharges(
   players: Player[],
@@ -46,7 +47,7 @@ export function calculateCharges(
 
   // Slots
   for (const slot of slots) {
-    const placeLabel = slot.place === 1 ? 'Slots 1st' : slot.place === 2 ? 'Slots 2nd' : 'Slots 3rd';
+    const placeLabel = `Slots ${formatPlace(slot.place)}`;
     for (const p of slot.players) {
       if (!p.isPro && p.totalPayout > 0) {
         addWinning(p.name, p.totalPayout, `${placeLabel} $${p.totalPayout.toFixed(2)}`);
@@ -56,7 +57,7 @@ export function calculateCharges(
 
   // Par Points
   for (const pp of parPoints) {
-    const placeLabel = pp.place === 1 ? 'Par Points 1st' : pp.place === 2 ? 'Par Points 2nd' : 'Par Points 3rd';
+    const placeLabel = `Par Points ${formatPlace(pp.place)}`;
     addWinning(pp.player, pp.payout, `${placeLabel} $${pp.payout.toFixed(2)}`);
   }
 
