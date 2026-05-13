@@ -173,7 +173,7 @@ export function Step2Confirm() {
       </div>
 
       {/* KP & Ace Section (collapsible) */}
-      <div className="bg-card rounded-xl border border-border overflow-hidden">
+      <div className="bg-card rounded-xl border border-border">
         <button
           onClick={() => setShowKPs(!showKPs)}
           className="w-full flex items-center justify-between p-4 hover:bg-card-highlight transition-colors"

@@ -38,7 +38,7 @@ export interface WizardState {
 
 type Action =
   | { type: 'SET_ROUND'; payload: RoundInput }
-  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[] } }
+  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[] } }
   | { type: 'SET_PLAYERS'; payload: Player[] }
   | { type: 'SET_SLOT_TEAMS'; payload: SlotTeam[] }
   | { type: 'SET_DEUCES'; payload: DeuceEntry[] }
@@ -75,6 +75,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         slotTeams: action.payload.slotTeams,
         deuces: action.payload.deuces,
         parPointWinners: action.payload.parPointWinners,
+        kpWinners: action.payload.kpWinners,
         xlsLoaded: true,
         rules: { ...state.rules, splits: SPLIT_PRESETS[defaultPlaces] },
       };

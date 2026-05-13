@@ -24,6 +24,7 @@ export function Step2DataEntry() {
           slotTeams: parsed.slotTeams,
           deuces: parsed.deuces,
           parPointWinners: parsed.parPointWinners,
+          kpWinners: parsed.kpWinners,
         },
       });
 
@@ -33,6 +34,7 @@ export function Step2DataEntry() {
         `${parsed.slotTeams.length} slot teams`,
         `${parsed.deuces.length} deuce winners`,
         `${parsed.parPointWinners.length} par point leaders`,
+        `${parsed.kpWinners.length} KPs`,
       ].filter(Boolean);
 
       setSummary(`Loaded ${fileName}: ${parts.join(', ')}`);

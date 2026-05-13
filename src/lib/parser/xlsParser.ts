@@ -1,24 +1,55 @@
 import * as XLSX from 'xlsx';
-import type { Player, SlotTeam, DeuceEntry, ParPointWinner } from '@/types';
+import type { Player, SlotTeam, DeuceEntry, ParPointWinner, KPWinner } from '@/types';
 
 export interface ParsedXLS {
   players: Player[];
   parPointWinners: ParPointWinner[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
+  kpWinners: KPWinner[];
   sheetNames: string[];
+}
+
+const KP_HOLES = ['#2', '#7', '#12', '#16'];
+
+function findSheet(wb: XLSX.WorkBook, prefix: string): XLSX.WorkSheet | undefined {
+  const lower = prefix.toLowerCase();
+  const match = wb.SheetNames.find(n => n.toLowerCase().startsWith(lower));
+  return match ? wb.Sheets[match] : undefined;
 }
 
 export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
   const wb = XLSX.read(buffer, { type: 'array' });
   const sheetNames = wb.SheetNames;
 
-  const players = parseParPointsSheet(wb.Sheets['par points']);
-  const parPointWinners = extractParPointWinners(wb.Sheets['par points']);
-  const slotTeams = parseSlotsSheet(wb.Sheets['sunday slots'], players);
-  const deuces = parseDeucesSheet(wb.Sheets['deuce pot']);
+  const parPointsSheet = findSheet(wb, 'par points');
+  const players = parseParPointsSheet(parPointsSheet);
+  const parPointWinners = extractParPointWinners(parPointsSheet);
+  const slotTeams = parseSlotsSheet(findSheet(wb, 'sunday slots'), players);
+  const deuces = parseDeucesSheet(findSheet(wb, 'deuce pot'));
+  const kpWinners = parseKPSheets(wb);
 
-  return { players, parPointWinners, slotTeams, deuces, sheetNames };
+  return { players, parPointWinners, slotTeams, deuces, kpWinners, sheetNames };
+}
+
+function parseKPSheets(wb: XLSX.WorkBook): KPWinner[] {
+  const winners: KPWinner[] = [];
+  for (const hole of KP_HOLES) {
+    const sheet = findSheet(wb, `kp ${hole}`);
+    if (!sheet) continue;
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 }) as unknown as unknown[][];
+    // Row 0 = header "Pos | Player | Details", row 1 = first winner
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.length < 2) continue;
+      const name = String(row[1] ?? '').trim();
+      if (name && name !== 'Total Purse Allocated:') {
+        winners.push({ hole, player: name });
+        break; // only take the first winner per hole
+      }
+    }
+  }
+  return winners;
 }
 
 function parseParPointsSheet(sheet: XLSX.WorkSheet | undefined): Player[] {
