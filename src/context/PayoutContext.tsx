@@ -27,6 +27,7 @@ export interface WizardState {
   currentStep: number;
   round: RoundInput;
   players: Player[];
+  openPlayPlayers: Player[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   parPointWinners: ParPointWinner[];
@@ -38,7 +39,7 @@ export interface WizardState {
 
 type Action =
   | { type: 'SET_ROUND'; payload: RoundInput }
-  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[] } }
+  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; openPlayPlayers: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[] } }
   | { type: 'SET_PLAYERS'; payload: Player[] }
   | { type: 'SET_SLOT_TEAMS'; payload: SlotTeam[] }
   | { type: 'SET_DEUCES'; payload: DeuceEntry[] }
@@ -53,6 +54,7 @@ const initialState: WizardState = {
   currentStep: 1,
   round: { date: getPreviousSunday(), hasAce: false },
   players: [],
+  openPlayPlayers: [],
   slotTeams: [],
   deuces: [],
   parPointWinners: [],
@@ -72,6 +74,7 @@ function reducer(state: WizardState, action: Action): WizardState {
       return {
         ...state,
         players: action.payload.players,
+        openPlayPlayers: action.payload.openPlayPlayers,
         slotTeams: action.payload.slotTeams,
         deuces: action.payload.deuces,
         parPointWinners: action.payload.parPointWinners,

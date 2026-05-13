@@ -102,6 +102,7 @@ export function ResultsView() {
       {
         round: state.round,
         players: state.players,
+        openPlayPlayers: state.openPlayPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
         parPointWinners: state.parPointWinners,
@@ -125,6 +126,7 @@ export function ResultsView() {
       {
         round: state.round,
         players: state.players,
+        openPlayPlayers: state.openPlayPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
         parPointWinners: state.parPointWinners,

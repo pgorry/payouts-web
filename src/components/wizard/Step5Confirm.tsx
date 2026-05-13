@@ -13,6 +13,7 @@ export function Step5Confirm() {
       {
         round: state.round,
         players: state.players,
+        openPlayPlayers: state.openPlayPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
         parPointWinners: state.parPointWinners,

@@ -9,6 +9,7 @@ export function Step2Confirm() {
   const { state, dispatch } = usePayout();
   const realPlayers = state.players.filter(p => !p.isPro);
   const proCount = state.players.filter(p => p.isPro).length;
+  const openPlayPlayers = state.openPlayPlayers.filter(p => !p.isPro);
   const { round } = state;
   const holes = state.rules.kpHoles;
   const currentPlaces = state.rules.splits.length;
@@ -30,7 +31,7 @@ export function Step2Confirm() {
   const [showAceSuggestions, setShowAceSuggestions] = useState(false);
   const [aceSearch, setAceSearch] = useState(round.aceWinner ?? '');
 
-  const playerNames = state.players.filter(p => !p.isPro).map(p => p.name);
+  const playerNames = [...realPlayers, ...openPlayPlayers].map(p => p.name);
 
   const handleKPChange = (hole: string, value: string) => {
     setKpEntries(prev => ({ ...prev, [hole]: value }));
@@ -82,6 +83,7 @@ export function Step2Confirm() {
       {
         round: state.round,
         players: state.players,
+        openPlayPlayers: state.openPlayPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
         parPointWinners: state.parPointWinners,
@@ -117,7 +119,9 @@ export function Step2Confirm() {
           <div>
             <span className="text-text-dim text-xs uppercase tracking-wide">Field</span>
             <div className="text-text font-medium mt-1">
-              {realPlayers.length} players{proCount > 0 ? ` + ${proCount} pros` : ''}
+              {realPlayers.length} players
+              {openPlayPlayers.length > 0 && ` + ${openPlayPlayers.length} open play`}
+              {proCount > 0 && ` + ${proCount} pros`}
             </div>
           </div>
         </div>

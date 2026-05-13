@@ -37,6 +37,7 @@ export interface KPWinner {
 export interface RoundData {
   round: RoundInput;
   players: Player[];
+  openPlayPlayers: Player[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   parPointWinners: ParPointWinner[];
@@ -55,6 +56,9 @@ export interface RulesConfig {
   parPointsPercent: number;
   playerThreshold: number;
   splits: number[];
+  openPlayEntryFee: number;
+  openPlayDeuceContribution: number;
+  openPlayKpContribution: number;
 }
 
 // --- Output types ---
@@ -68,6 +72,7 @@ export interface MoneyPool {
   slotsPool: number;
   parPointsPool: number;
   playerCount: number;
+  openPlayPlayerCount: number;
 }
 
 export interface DeuceResult {

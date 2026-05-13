@@ -6,6 +6,7 @@ export function Step3ReviewData() {
   const { state, dispatch } = usePayout();
   const realPlayers = state.players.filter(p => !p.isPro);
   const proPlayers = state.players.filter(p => p.isPro);
+  const openPlayPlayers = state.openPlayPlayers.filter(p => !p.isPro);
   const currentPlaces = state.rules.splits.length;
   const defaultPlaces = getDefaultPlaces(realPlayers.length);
 
@@ -37,6 +38,23 @@ export function Step3ReviewData() {
           ))}
         </div>
       </div>
+
+      {/* Open Play Players */}
+      {openPlayPlayers.length > 0 && (
+        <div className="bg-card rounded-xl p-4 border border-border">
+          <h3 className="text-sm font-medium text-text-muted uppercase tracking-wide mb-3">
+            Open Play ({openPlayPlayers.length})
+            <span className="text-text-dim text-xs ml-2 normal-case">— $5 entry, eligible for deuces & KPs only</span>
+          </h3>
+          <div className="max-h-48 overflow-y-auto space-y-1">
+            {openPlayPlayers.map((p, i) => (
+              <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded text-sm text-text">
+                <span>{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Slot Teams */}
       <div className="bg-card rounded-xl p-4 border border-border">

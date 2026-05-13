@@ -21,6 +21,7 @@ export function Step2DataEntry() {
         type: 'SET_XLS_DATA',
         payload: {
           players: parsed.players,
+          openPlayPlayers: parsed.openPlayPlayers,
           slotTeams: parsed.slotTeams,
           deuces: parsed.deuces,
           parPointWinners: parsed.parPointWinners,
@@ -28,8 +29,10 @@ export function Step2DataEntry() {
         },
       });
 
+      const openPlayCount = parsed.openPlayPlayers.filter(p => !p.isPro).length;
       const parts = [
         `${realPlayers.length} players`,
+        openPlayCount > 0 ? `${openPlayCount} open play` : '',
         proCount > 0 ? `${proCount} pros` : '',
         `${parsed.slotTeams.length} slot teams`,
         `${parsed.deuces.length} deuce winners`,
@@ -98,6 +101,10 @@ export function Step2DataEntry() {
             <div className="bg-card-highlight rounded-lg p-3">
               <div className="text-teal font-semibold text-lg">{state.players.filter(p => !p.isPro).length}</div>
               <div className="text-text-muted">Players</div>
+            </div>
+            <div className="bg-card-highlight rounded-lg p-3">
+              <div className="text-teal font-semibold text-lg">{state.openPlayPlayers.filter(p => !p.isPro).length}</div>
+              <div className="text-text-muted">Open Play</div>
             </div>
             <div className="bg-card-highlight rounded-lg p-3">
               <div className="text-teal font-semibold text-lg">{state.slotTeams.length}</div>

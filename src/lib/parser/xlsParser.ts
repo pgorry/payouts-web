@@ -3,6 +3,7 @@ import type { Player, SlotTeam, DeuceEntry, ParPointWinner, KPWinner } from '@/t
 
 export interface ParsedXLS {
   players: Player[];
+  openPlayPlayers: Player[];
   parPointWinners: ParPointWinner[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
@@ -25,11 +26,12 @@ export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
   const parPointsSheet = findSheet(wb, 'par points');
   const players = parseParPointsSheet(parPointsSheet);
   const parPointWinners = extractParPointWinners(parPointsSheet);
+  const openPlayPlayers = parseOpenPlaySheet(findSheet(wb, 'general open play'));
   const slotTeams = parseSlotsSheet(findSheet(wb, 'sunday slots'), players);
   const deuces = parseDeucesSheet(findSheet(wb, 'deuce pot'));
   const kpWinners = parseKPSheets(wb);
 
-  return { players, parPointWinners, slotTeams, deuces, kpWinners, sheetNames };
+  return { players, openPlayPlayers, parPointWinners, slotTeams, deuces, kpWinners, sheetNames };
 }
 
 function parseKPSheets(wb: XLSX.WorkBook): KPWinner[] {
@@ -151,6 +153,32 @@ function parseSlotsSheet(sheet: XLSX.WorkSheet | undefined, allPlayers: Player[]
   }
 
   return teams;
+}
+
+function parseOpenPlaySheet(sheet: XLSX.WorkSheet | undefined): Player[] {
+  if (!sheet) return [];
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 }) as unknown as unknown[][];
+
+  const players: Player[] = [];
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (!row || row.length < 2) continue;
+
+    const posStr = String(row[0] ?? '').trim();
+    if (!posStr || posStr === 'Total Purse Allocated:') continue;
+    if (isNaN(parseInt(posStr))) continue;
+
+    const playerName = String(row[1] ?? '').trim();
+    if (!playerName) continue;
+
+    const isPro = row.some(cell =>
+      typeof cell === 'string' && cell.toLowerCase().includes('pro for slots')
+    );
+
+    players.push({ name: playerName, isPro });
+  }
+
+  return players;
 }
 
 function parseDeucesSheet(sheet: XLSX.WorkSheet | undefined): DeuceEntry[] {

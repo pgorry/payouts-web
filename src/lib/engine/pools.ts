@@ -1,13 +1,27 @@
 import type { MoneyPool, RulesConfig } from '@/types';
 
-export function calculatePool(playerCount: number, rules: RulesConfig): MoneyPool {
-  const totalCollected = playerCount * rules.entryFee;
-  const deucePot = playerCount * rules.deuceContribution;
-  const kpEach = playerCount >= rules.playerThreshold
+export function calculatePool(
+  playerCount: number,
+  rules: RulesConfig,
+  openPlayPlayerCount: number = 0,
+): MoneyPool {
+  const slotsCollected = playerCount * rules.entryFee;
+  const openPlayCollected = openPlayPlayerCount * rules.openPlayEntryFee;
+  const totalCollected = slotsCollected + openPlayCollected;
+
+  const deucePot =
+    playerCount * rules.deuceContribution +
+    openPlayPlayerCount * rules.openPlayDeuceContribution;
+
+  const baseKpEach = playerCount >= rules.playerThreshold
     ? rules.kpPrizeOver32
     : rules.kpPrizeUnder32;
-  const kpTotal = rules.kpHoles.length * kpEach;
-  const remaining = totalCollected - deucePot - kpTotal;
+  const baseKpTotal = rules.kpHoles.length * baseKpEach;
+  const openPlayKpTotal = openPlayPlayerCount * rules.openPlayKpContribution;
+  const kpTotal = baseKpTotal + openPlayKpTotal;
+  const kpEach = kpTotal / rules.kpHoles.length;
+
+  const remaining = slotsCollected - playerCount * rules.deuceContribution - baseKpTotal;
   const slotsPool = remaining * rules.slotsPercent;
   const parPointsPool = remaining * rules.parPointsPercent;
 
@@ -20,5 +34,6 @@ export function calculatePool(playerCount: number, rules: RulesConfig): MoneyPoo
     slotsPool,
     parPointsPool,
     playerCount,
+    openPlayPlayerCount,
   };
 }

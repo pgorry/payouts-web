@@ -10,13 +10,16 @@ import { formatPlace } from '@/lib/format';
 
 export function calculateCharges(
   players: Player[],
+  openPlayPlayers: Player[],
   deuces: DeuceResult,
   kps: KPResult[],
   slots: SlotResult[],
   parPoints: ParPointResult[],
   entryFee: number,
+  openPlayEntryFee: number,
 ): PlayerCharge[] {
   const realPlayers = players.filter(p => !p.isPro);
+  const realOpenPlay = openPlayPlayers.filter(p => !p.isPro);
   const winnings = new Map<string, { total: number; parts: string[] }>();
 
   const addWinning = (name: string, amount: number, label: string) => {
@@ -62,7 +65,7 @@ export function calculateCharges(
   }
 
   // Build charge list: winners first (by total desc), then non-winners (alphabetical)
-  const charges: PlayerCharge[] = realPlayers.map(p => {
+  const slotsCharges: PlayerCharge[] = realPlayers.map(p => {
     const w = winnings.get(p.name);
     return {
       name: p.name,
@@ -72,6 +75,17 @@ export function calculateCharges(
       net: (w ? w.total : 0) - entryFee,
     };
   });
+  const openPlayCharges: PlayerCharge[] = realOpenPlay.map(p => {
+    const w = winnings.get(p.name);
+    return {
+      name: p.name,
+      charge: openPlayEntryFee,
+      won: w ? w.total : 0,
+      breakdown: w ? w.parts.join(' + ') : '',
+      net: (w ? w.total : 0) - openPlayEntryFee,
+    };
+  });
+  const charges: PlayerCharge[] = [...slotsCharges, ...openPlayCharges];
 
   // Sort: winners by total desc, then non-winners alphabetically
   charges.sort((a, b) => {

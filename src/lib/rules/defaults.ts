@@ -23,4 +23,7 @@ export const DEFAULT_RULES: RulesConfig = {
   parPointsPercent: 0.20,
   playerThreshold: 32,
   splits: SPLIT_PRESETS[2],
+  openPlayEntryFee: 5,
+  openPlayDeuceContribution: 3,
+  openPlayKpContribution: 2,
 };

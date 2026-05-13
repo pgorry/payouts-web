@@ -46,14 +46,18 @@ function resolvePlayerName(input: string, players: Player[]): string {
 export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutResults {
   const realPlayers = data.players.filter(p => !p.isPro);
   const playerCount = realPlayers.length;
+  const openPlayPlayers = data.openPlayPlayers.filter(p => !p.isPro);
+  const openPlayCount = openPlayPlayers.length;
 
-  const pool = calculatePool(playerCount, rules);
+  const pool = calculatePool(playerCount, rules, openPlayCount);
   const deuces = calculateDeuces(data.round, data.deuces, pool.deucePot);
 
-  // Build KP results, resolving names to match the player list
+  // Open-play players are eligible to win KPs, so resolve names against both rosters
+  const allEligibleKpPlayers = [...data.players, ...data.openPlayPlayers];
+
   const kps: KPResult[] = rules.kpHoles.map(hole => {
     const winner = data.kpWinners.find(kp => kp.hole === hole);
-    const resolved = winner ? resolvePlayerName(winner.player, data.players) : '';
+    const resolved = winner ? resolvePlayerName(winner.player, allEligibleKpPlayers) : '';
     return {
       hole,
       player: resolved,
@@ -71,7 +75,16 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   const slots = calculateSlots(data.slotTeams, adjustedSlotsPool, playerCount, rules);
   const parPoints = calculateParPoints(data.parPointWinners, adjustedParPointsPool, playerCount, rules);
 
-  const charges = calculateCharges(data.players, deuces, kps, slots, parPoints, rules.entryFee);
+  const charges = calculateCharges(
+    data.players,
+    data.openPlayPlayers,
+    deuces,
+    kps,
+    slots,
+    parPoints,
+    rules.entryFee,
+    rules.openPlayEntryFee,
+  );
 
   const totalPaidOut = charges.reduce((sum, c) => sum + c.won, 0);
 
