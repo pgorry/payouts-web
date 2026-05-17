@@ -9,6 +9,7 @@ export const SPLIT_PRESETS: Record<number, number[]> = {
 
 export function getDefaultPlaces(playerCount: number): number {
   if (playerCount >= 48) return 5;
+  if (playerCount >= 40) return 4;
   if (playerCount >= 32) return 3;
   return 2;
 }

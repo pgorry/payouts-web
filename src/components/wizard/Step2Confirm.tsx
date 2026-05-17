@@ -3,6 +3,7 @@ import { usePayout } from '@/context/PayoutContext';
 import { calculatePayouts } from '@/lib/engine/calculate';
 import { formatPlace } from '@/lib/format';
 import { SPLIT_PRESETS, getDefaultPlaces } from '@/lib/rules/defaults';
+import { PlacesInfoTooltip } from '@/components/shared/PlacesInfoTooltip';
 import type { KPWinner } from '@/types';
 
 export function Step2Confirm() {
@@ -149,11 +150,12 @@ export function Step2Confirm() {
       {/* Places to Pay */}
       <div className="bg-card rounded-xl p-4 border border-border">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             <span className="text-text-dim text-xs uppercase tracking-wide">Places to Pay</span>
-            <span className="text-text-dim text-xs ml-2">
+            <span className="text-text-dim text-xs">
               (default: {defaultPlaces} for {realPlayers.length} players)
             </span>
+            <PlacesInfoTooltip />
           </div>
           <div className="flex gap-1">
             {[2, 3, 4, 5].map(n => (

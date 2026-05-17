@@ -3,6 +3,9 @@ import { usePayout } from '@/context/PayoutContext';
 import { PayoutsCard } from './PayoutsCard';
 import { SummaryCard } from './SummaryCard';
 import { ChargesCard } from './ChargesCard';
+import { ChargesOnlyCard } from './ChargesOnlyCard';
+import { PaymentsOnlyCard } from './PaymentsOnlyCard';
+import { PlacesInfoTooltip } from '@/components/shared/PlacesInfoTooltip';
 import { exportCardAsPNG, copyCardToClipboard } from '@/lib/pngExport';
 import { formatDate } from '@/lib/format';
 import { calculatePayouts } from '@/lib/engine/calculate';
@@ -41,6 +44,7 @@ function CopyButton({ elementRef }: { elementRef: React.RefObject<HTMLDivElement
 }
 
 type Tab = 'details' | 'payouts' | 'summary';
+type ProShopMode = 'combined' | 'charges' | 'payments';
 
 const TABS: { key: Tab; label: string }[] = [
   { key: 'details', label: 'For Pro Shop' },
@@ -48,12 +52,21 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'summary', label: 'For Exec' },
 ];
 
+const PRO_SHOP_MODES: { key: ProShopMode; label: string }[] = [
+  { key: 'combined', label: 'Combined' },
+  { key: 'charges', label: 'Charges Only' },
+  { key: 'payments', label: 'Payments Only' },
+];
+
 export function ResultsView() {
   const { state, dispatch } = usePayout();
   const payoutsRef = useRef<HTMLDivElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
   const chargesRef = useRef<HTMLDivElement>(null);
+  const chargesOnlyRef = useRef<HTMLDivElement>(null);
+  const paymentsOnlyRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>('details');
+  const [proShopMode, setProShopMode] = useState<ProShopMode>('combined');
   const [showKPEditor, setShowKPEditor] = useState(false);
   const [kpEntries, setKpEntries] = useState<Record<string, string>>({});
   const [kpSuggestions, setKpSuggestions] = useState<string[]>([]);
@@ -137,8 +150,15 @@ export function ResultsView() {
     dispatch({ type: 'SET_RESULTS', payload: results });
   };
 
-  const activeRef = activeTab === 'details' ? chargesRef : activeTab === 'payouts' ? summaryRef : payoutsRef;
-  const activeFilename = activeTab === 'details' ? `charges-${dateStr}.png` : activeTab === 'payouts' ? `summary-${dateStr}.png` : `payouts-${dateStr}.png`;
+  const proShopRef = proShopMode === 'combined' ? chargesRef : proShopMode === 'charges' ? chargesOnlyRef : paymentsOnlyRef;
+  const proShopFilename = proShopMode === 'combined'
+    ? `charges-payouts-${dateStr}.png`
+    : proShopMode === 'charges'
+      ? `charges-only-${dateStr}.png`
+      : `payments-only-${dateStr}.png`;
+
+  const activeRef = activeTab === 'details' ? proShopRef : activeTab === 'payouts' ? summaryRef : payoutsRef;
+  const activeFilename = activeTab === 'details' ? proShopFilename : activeTab === 'payouts' ? `summary-${dateStr}.png` : `payouts-${dateStr}.png`;
 
   return (
     <div>
@@ -163,6 +183,7 @@ export function ResultsView() {
                 </button>
               ))}
             </div>
+            <PlacesInfoTooltip />
             <span className="text-text-dim text-xs">{state.rules.splits.join('/')}%</span>
           </div>
           <div className="flex items-center gap-3">
@@ -279,8 +300,29 @@ export function ResultsView() {
       )}
 
       {/* Tab content */}
-      <div className="mt-4">
-        {activeTab === 'details' && <ChargesCard ref={chargesRef} results={state.results} />}
+      <div className="mt-4 space-y-4">
+        {activeTab === 'details' && (
+          <>
+            <div className="flex gap-1 bg-card rounded-lg p-1 border border-border w-fit">
+              {PRO_SHOP_MODES.map(mode => (
+                <button
+                  key={mode.key}
+                  onClick={() => setProShopMode(mode.key)}
+                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    proShopMode === mode.key
+                      ? 'bg-teal text-background'
+                      : 'text-text-muted hover:text-text'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            {proShopMode === 'combined' && <ChargesCard ref={chargesRef} results={state.results} />}
+            {proShopMode === 'charges' && <ChargesOnlyCard ref={chargesOnlyRef} results={state.results} />}
+            {proShopMode === 'payments' && <PaymentsOnlyCard ref={paymentsOnlyRef} results={state.results} />}
+          </>
+        )}
         {activeTab === 'payouts' && <SummaryCard ref={summaryRef} results={state.results} />}
         {activeTab === 'summary' && <PayoutsCard ref={payoutsRef} results={state.results} />}
       </div>
