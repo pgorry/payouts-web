@@ -32,6 +32,12 @@ export interface ParPointWinner {
 export interface KPWinner {
   hole: string;
   player: string;
+  /**
+   * Whether this KP winner is paid in cash or given a sleeve of balls.
+   * Undefined = let the engine decide (extra KPs beyond the cash count default
+   * to balls, given to the players who won the most cash that day).
+   */
+  prize?: 'cash' | 'balls';
 }
 
 export interface RoundData {
@@ -50,6 +56,12 @@ export interface RulesConfig {
   entryFee: number;
   deuceContribution: number;
   kpHoles: string[];
+  /**
+   * Standard number of KP cash prizes. Drives the pool reservation and the
+   * per-KP cash value, independent of how many KP holes there are. Any KP
+   * winners beyond this count default to a sleeve of balls.
+   */
+  kpCashCount: number;
   kpPrizeOver32: number;
   kpPrizeUnder32: number;
   slotsPercent: number;
@@ -112,6 +124,8 @@ export interface KPResult {
   player: string;
   payout: number;
   pending: boolean;
+  /** 'cash' = paid kpEach; 'balls' = a sleeve of balls (no cash). */
+  prize: 'cash' | 'balls';
 }
 
 export interface PlayerCharge {

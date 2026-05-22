@@ -115,7 +115,13 @@ export const SummaryCard = forwardRef<HTMLDivElement, SummaryCardProps>(
               <tr key={kp.hole}>
                 <td className="py-2 px-3 text-text-muted">{kp.hole}</td>
                 <td className="py-2 px-3">{kp.pending ? <span className="text-text-dim italic">No Winner</span> : kp.player}</td>
-                <td className="py-2 px-3 text-right font-semibold text-emerald">{kp.pending ? '—' : formatCurrency(kp.payout)}</td>
+                <td className="py-2 px-3 text-right font-semibold">
+                  {kp.pending
+                    ? <span className="text-emerald">—</span>
+                    : kp.prize === 'balls'
+                      ? <span className="text-amber">⚪⚪⚪ Sleeve of balls</span>
+                      : <span className="text-emerald">{formatCurrency(kp.payout)}</span>}
+                </td>
               </tr>
             ))}
           </tbody>

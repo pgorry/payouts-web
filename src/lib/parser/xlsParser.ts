@@ -8,10 +8,10 @@ export interface ParsedXLS {
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   kpWinners: KPWinner[];
+  /** KP holes detected in the file, in sheet order (e.g. ['#2','#7',...]). */
+  kpHoles: string[];
   sheetNames: string[];
 }
-
-const KP_HOLES = ['#2', '#7', '#12', '#16'];
 
 function findSheet(wb: XLSX.WorkBook, prefix: string): XLSX.WorkSheet | undefined {
   const lower = prefix.toLowerCase();
@@ -29,16 +29,32 @@ export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
   const openPlayPlayers = parseOpenPlaySheet(findSheet(wb, 'general open play'));
   const slotTeams = parseSlotsSheet(findSheet(wb, 'sunday slots'), players);
   const deuces = parseDeucesSheet(findSheet(wb, 'deuce pot'));
-  const kpWinners = parseKPSheets(wb);
+  const { kpWinners, kpHoles } = parseKPSheets(wb);
 
-  return { players, openPlayPlayers, parPointWinners, slotTeams, deuces, kpWinners, sheetNames };
+  return { players, openPlayPlayers, parPointWinners, slotTeams, deuces, kpWinners, kpHoles, sheetNames };
 }
 
-function parseKPSheets(wb: XLSX.WorkBook): KPWinner[] {
-  const winners: KPWinner[] = [];
-  for (const hole of KP_HOLES) {
-    const sheet = findSheet(wb, `kp ${hole}`);
-    if (!sheet) continue;
+/**
+ * Detect every KP sheet in the workbook (any sheet whose name starts with "kp").
+ * The hole label is whatever follows "kp" in the sheet name, e.g. "KP #2" → "#2".
+ * This way weeks with more than the usual four KPs are picked up automatically.
+ */
+function parseKPSheets(wb: XLSX.WorkBook): { kpWinners: KPWinner[]; kpHoles: string[] } {
+  const kpWinners: KPWinner[] = [];
+  const kpHoles: string[] = [];
+
+  for (const sheetName of wb.SheetNames) {
+    const match = sheetName.trim().match(/^kp\b\s*(.*)$/i);
+    if (!match) continue;
+
+    let hole = match[1].trim();
+    if (!hole) continue; // e.g. a sheet literally named "KP"
+    if (/^\d/.test(hole)) hole = `#${hole}`; // normalise "2" → "#2"
+    if (kpHoles.includes(hole)) continue; // ignore duplicate sheet names
+
+    kpHoles.push(hole);
+
+    const sheet = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 }) as unknown as unknown[][];
     // Row 0 = header "Pos | Player | Details", row 1 = first winner
     for (let i = 1; i < rows.length; i++) {
@@ -46,12 +62,13 @@ function parseKPSheets(wb: XLSX.WorkBook): KPWinner[] {
       if (!row || row.length < 2) continue;
       const name = String(row[1] ?? '').trim();
       if (name && name !== 'Total Purse Allocated:') {
-        winners.push({ hole, player: name });
+        kpWinners.push({ hole, player: name });
         break; // only take the first winner per hole
       }
     }
   }
-  return winners;
+
+  return { kpWinners, kpHoles };
 }
 
 function parseParPointsSheet(sheet: XLSX.WorkSheet | undefined): Player[] {

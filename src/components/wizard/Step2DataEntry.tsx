@@ -26,6 +26,7 @@ export function Step2DataEntry() {
           deuces: parsed.deuces,
           parPointWinners: parsed.parPointWinners,
           kpWinners: parsed.kpWinners,
+          kpHoles: parsed.kpHoles,
         },
       });
 

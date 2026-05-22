@@ -16,10 +16,14 @@ export function calculatePool(
   const baseKpEach = playerCount >= rules.playerThreshold
     ? rules.kpPrizeOver32
     : rules.kpPrizeUnder32;
-  const baseKpTotal = rules.kpHoles.length * baseKpEach;
+  // Pool reservation and per-KP value are based on the standard number of cash
+  // prizes, NOT the number of KP holes. This way an extra KP (paid in balls)
+  // has no effect on the money pool.
+  const cashCount = rules.kpCashCount;
+  const baseKpTotal = cashCount * baseKpEach;
   const openPlayKpTotal = openPlayPlayerCount * rules.openPlayKpContribution;
   const kpTotal = baseKpTotal + openPlayKpTotal;
-  const kpEach = kpTotal / rules.kpHoles.length;
+  const kpEach = cashCount > 0 ? kpTotal / cashCount : 0;
 
   const remaining = slotsCollected - playerCount * rules.deuceContribution - baseKpTotal;
   const slotsPool = remaining * rules.slotsPercent;

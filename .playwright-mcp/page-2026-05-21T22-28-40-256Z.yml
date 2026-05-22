@@ -1,0 +1,50 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - heading "UGC UGC Weekend Mens - Payout Calculator" [level=1] [ref=e6]:
+        - img "UGC" [ref=e7]
+        - text: UGC Weekend Mens - Payout Calculator
+      - paragraph [ref=e8]: Calculate and distribute weekly payouts
+    - generic [ref=e9]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: "1"
+        - generic [ref=e13]: Upload Data
+      - generic [ref=e16]:
+        - generic [ref=e17]: "2"
+        - generic [ref=e18]: Confirm
+    - generic [ref=e19]:
+      - heading "Upload League Data" [level=2] [ref=e20]
+      - paragraph [ref=e21]: Upload the XLS file exported from the league system. Player data, slots, par points, and deuces will be auto-extracted.
+      - generic [ref=e23] [cursor=pointer]:
+        - generic [ref=e24]: 📁
+        - generic [ref=e25]: Drop your XLS file here or browse
+      - generic [ref=e26]:
+        - link "Open Golf Genius Leaderboard" [ref=e27] [cursor=pointer]:
+          - /url: https://www.golfgenius.com/leagues/11530790049666839684/rounds/12429475748304139773/v2tournaments
+        - button "How to export XLS?" [ref=e28] [cursor=pointer]
+      - button "Next →" [disabled] [ref=e29]
+  - generic [ref=e31]:
+    - generic [ref=e32]:
+      - heading "Rules" [level=3] [ref=e33]
+      - button "✕" [ref=e34] [cursor=pointer]
+    - generic [ref=e35]:
+      - generic [ref=e36]: Entry Fee
+      - text: $15.00
+    - generic [ref=e37]:
+      - generic [ref=e38]: Deuce Contribution
+      - generic [ref=e39]: $3.00 / player
+    - generic [ref=e40]:
+      - generic [ref=e41]: KP Prize
+      - generic [ref=e42]:
+        - text: $10.00 each
+        - generic [ref=e43]: (—)
+    - generic [ref=e44]:
+      - generic [ref=e45]: Pool Split
+      - generic [ref=e46]: 80% slots / 20% par pts
+    - generic [ref=e47]:
+      - generic [ref=e48]: Payout Split
+      - generic [ref=e49]: "Top 2: 60/40%"
+    - generic [ref=e50]:
+      - generic [ref=e51]: Player Threshold
+      - generic [ref=e52]: 32 players
+    - button "✏️ Edit Rules" [ref=e54] [cursor=pointer]

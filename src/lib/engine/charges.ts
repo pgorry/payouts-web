@@ -43,7 +43,11 @@ export function calculateCharges(
 
   // KPs
   for (const kp of kps) {
-    if (!kp.pending) {
+    if (kp.pending) continue;
+    if (kp.prize === 'balls') {
+      // No cash, but record it so the player's breakdown shows the prize.
+      addWinning(kp.player, 0, 'KP (sleeve of balls)');
+    } else {
       addWinning(kp.player, kp.payout, `KP $${kp.payout.toFixed(2)}`);
     }
   }

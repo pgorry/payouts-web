@@ -39,7 +39,7 @@ export interface WizardState {
 
 type Action =
   | { type: 'SET_ROUND'; payload: RoundInput }
-  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; openPlayPlayers: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[] } }
+  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; openPlayPlayers: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[]; kpHoles: string[] } }
   | { type: 'SET_PLAYERS'; payload: Player[] }
   | { type: 'SET_SLOT_TEAMS'; payload: SlotTeam[] }
   | { type: 'SET_DEUCES'; payload: DeuceEntry[] }
@@ -71,6 +71,10 @@ function reducer(state: WizardState, action: Action): WizardState {
     case 'SET_XLS_DATA': {
       const realCount = action.payload.players.filter(p => !p.isPro).length;
       const defaultPlaces = getDefaultPlaces(realCount);
+      // Use the KP holes detected in the file; fall back to the standard set.
+      const kpHoles = action.payload.kpHoles.length > 0
+        ? action.payload.kpHoles
+        : state.rules.kpHoles;
       return {
         ...state,
         players: action.payload.players,
@@ -80,7 +84,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         parPointWinners: action.payload.parPointWinners,
         kpWinners: action.payload.kpWinners,
         xlsLoaded: true,
-        rules: { ...state.rules, splits: SPLIT_PRESETS[defaultPlaces] },
+        rules: { ...state.rules, splits: SPLIT_PRESETS[defaultPlaces], kpHoles },
       };
     }
     case 'SET_PLAYERS':

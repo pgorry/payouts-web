@@ -34,7 +34,7 @@ export const PayoutsCard = forwardRef<HTMLDivElement, PayoutsCardProps>(
           <tbody>
             <Row label="Total Collected" amount={pool.totalCollected} />
             <Row label={`Deuce Pot (${pool.playerCount} x $${results.pool.deucePot / pool.playerCount})`} amount={pool.deucePot} />
-            <Row label={`KPs (${kps.length} x ${formatCurrency(pool.kpEach)})`} amount={pool.kpTotal} />
+            <Row label={`KPs (${pool.kpEach > 0 ? Math.round(pool.kpTotal / pool.kpEach) : 0} x ${formatCurrency(pool.kpEach)})`} amount={pool.kpTotal} />
             <Row label={`Slots Pool (${Math.round(pool.slotsPool / pool.remaining * 100)}%)`} amount={pool.slotsPool} />
             <Row label={`Par Points Pool (${Math.round(pool.parPointsPool / pool.remaining * 100)}%)`} amount={pool.parPointsPool} />
           </tbody>
@@ -84,7 +84,13 @@ export const PayoutsCard = forwardRef<HTMLDivElement, PayoutsCardProps>(
               <tr key={kp.hole}>
                 <td className="py-2 px-3 text-text-muted">{kp.hole}</td>
                 <td className="py-2 px-3">{kp.pending ? <span className="text-text-dim italic">No Winner</span> : kp.player}</td>
-                <td className="py-2 px-3 text-right font-semibold text-emerald">{kp.pending ? '—' : formatCurrency(kp.payout)}</td>
+                <td className="py-2 px-3 text-right font-semibold">
+                  {kp.pending
+                    ? <span className="text-emerald">—</span>
+                    : kp.prize === 'balls'
+                      ? <span className="text-amber">⚪⚪⚪ Sleeve of balls</span>
+                      : <span className="text-emerald">{formatCurrency(kp.payout)}</span>}
+                </td>
               </tr>
             ))}
           </tbody>

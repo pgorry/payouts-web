@@ -46,6 +46,13 @@ function CopyButton({ elementRef }: { elementRef: React.RefObject<HTMLDivElement
 type Tab = 'details' | 'payouts' | 'summary';
 type ProShopMode = 'combined' | 'charges' | 'payments';
 
+interface KpEditRow {
+  id: number;
+  hole: string;
+  player: string;
+  prize?: 'cash' | 'balls';
+}
+
 const TABS: { key: Tab; label: string }[] = [
   { key: 'details', label: 'For Pro Shop' },
   { key: 'payouts', label: 'For Members' },
@@ -68,47 +75,52 @@ export function ResultsView() {
   const [activeTab, setActiveTab] = useState<Tab>('details');
   const [proShopMode, setProShopMode] = useState<ProShopMode>('combined');
   const [showKPEditor, setShowKPEditor] = useState(false);
-  const [kpEntries, setKpEntries] = useState<Record<string, string>>({});
+  const [kpRows, setKpRows] = useState<KpEditRow[]>([]);
   const [kpSuggestions, setKpSuggestions] = useState<string[]>([]);
-  const [kpActiveHole, setKpActiveHole] = useState<string | null>(null);
+  const [kpActiveRow, setKpActiveRow] = useState<number | null>(null);
+  const kpRowId = useRef(0);
 
-  const holes = state.rules.kpHoles;
   const playerNames = state.players.filter(p => !p.isPro).map(p => p.name);
-  const missingKPs = holes.filter(h => !state.kpWinners.find(kp => kp.hole === h && kp.player));
 
-  // Init KP entries from state
+  // Re-seed the editor rows from current state each time it's opened.
   useEffect(() => {
-    const entries: Record<string, string> = {};
-    for (const hole of holes) {
+    if (!showKPEditor) return;
+    setKpRows(state.rules.kpHoles.map(hole => {
       const existing = state.kpWinners.find(kp => kp.hole === hole);
-      entries[hole] = existing?.player ?? '';
-    }
-    setKpEntries(entries);
-  }, []);
+      return { id: kpRowId.current++, hole, player: existing?.player ?? '', prize: existing?.prize };
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showKPEditor]);
 
-  const handleKPChange = (hole: string, value: string) => {
-    setKpEntries(prev => ({ ...prev, [hole]: value }));
-    setKpActiveHole(hole);
-    if (value.length > 0) {
-      setKpSuggestions(playerNames.filter(name =>
-        name.toLowerCase().includes(value.toLowerCase())
-      ).slice(0, 5));
-    } else {
-      setKpSuggestions([]);
-    }
+  const updateKpRow = (id: number, patch: Partial<KpEditRow>) =>
+    setKpRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
+  const addKpRow = () =>
+    setKpRows(prev => [...prev, { id: kpRowId.current++, hole: '', player: '' }]);
+  const removeKpRow = (id: number) =>
+    setKpRows(prev => prev.filter(r => r.id !== id));
+
+  const handleKPChange = (id: number, value: string) => {
+    updateKpRow(id, { player: value });
+    setKpActiveRow(id);
+    setKpSuggestions(value.length > 0
+      ? playerNames.filter(n => n.toLowerCase().includes(value.toLowerCase())).slice(0, 5)
+      : []);
   };
 
-  const selectKPSuggestion = (hole: string, name: string) => {
-    setKpEntries(prev => ({ ...prev, [hole]: name }));
+  const selectKPSuggestion = (id: number, name: string) => {
+    updateKpRow(id, { player: name });
     setKpSuggestions([]);
-    setKpActiveHole(null);
+    setKpActiveRow(null);
   };
 
   const saveKPs = () => {
-    const kpWinners: KPWinner[] = holes
-      .filter(hole => kpEntries[hole]?.trim())
-      .map(hole => ({ hole, player: kpEntries[hole].trim() }));
+    const rows = kpRows.filter(r => r.hole.trim());
+    const kpWinners: KPWinner[] = rows
+      .filter(r => r.player.trim())
+      .map(r => ({ hole: r.hole.trim(), player: r.player.trim(), prize: r.prize }));
+    const newRules = { ...state.rules, kpHoles: rows.map(r => r.hole.trim()) };
     dispatch({ type: 'SET_KP_WINNERS', payload: kpWinners });
+    dispatch({ type: 'SET_RULES', payload: newRules });
 
     // Recalculate with updated KPs
     const results = calculatePayouts(
@@ -121,7 +133,7 @@ export function ResultsView() {
         parPointWinners: state.parPointWinners,
         kpWinners,
       },
-      state.rules,
+      newRules,
     );
     dispatch({ type: 'SET_RESULTS', payload: results });
     setShowKPEditor(false);
@@ -131,6 +143,12 @@ export function ResultsView() {
 
   const currentPlaces = state.rules.splits.length;
   const dateStr = state.results.date;
+
+  // KP allocation summary for the bar / editor (derived from computed results).
+  const kpResults = state.results.kps;
+  const cashKps = kpResults.filter(k => k.prize === 'cash' && !k.pending);
+  const ballsKps = kpResults.filter(k => k.prize === 'balls');
+  const pendingKps = kpResults.filter(k => k.pending);
 
   const recalculate = (places: number) => {
     const newRules = { ...state.rules, splits: SPLIT_PRESETS[places] };
@@ -233,15 +251,19 @@ export function ResultsView() {
         </div>
       </div>
 
-      {/* KP Banner */}
-      {missingKPs.length > 0 && !showKPEditor && (
-        <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-orange-400 text-sm">
-            {missingKPs.length} KP winner{missingKPs.length > 1 ? 's' : ''} missing ({missingKPs.join(', ')}) — money returned to pot
+      {/* KP allocation bar */}
+      {!showKPEditor && (
+        <div className={`rounded-lg px-4 py-3 flex items-center justify-between border ${
+          pendingKps.length > 0 ? 'bg-orange-500/10 border-orange-500/30' : 'bg-card border-border'
+        }`}>
+          <span className={`text-sm ${pendingKps.length > 0 ? 'text-orange-400' : 'text-text-muted'}`}>
+            KPs: {cashKps.length} cash
+            {ballsKps.length > 0 && <> · {ballsKps.length} sleeve{ballsKps.length > 1 ? 's' : ''} of balls ({ballsKps.map(k => k.player.split(', ')[0]).join(', ')})</>}
+            {pendingKps.length > 0 && <> · {pendingKps.length} missing ({pendingKps.map(k => k.hole).join(', ')}) — money returned to pot</>}
           </span>
           <button
             onClick={() => setShowKPEditor(true)}
-            className="text-orange-400 text-sm font-medium hover:text-orange-300 underline"
+            className="text-teal text-sm font-medium hover:text-teal/80 underline shrink-0 ml-3"
           >
             Edit KPs
           </button>
@@ -250,39 +272,87 @@ export function ResultsView() {
 
       {/* KP Editor */}
       {showKPEditor && (
-        <div className="bg-card rounded-xl border border-orange-500/30 p-4 space-y-3">
+        <div className="bg-card rounded-xl border border-teal/30 p-4 space-y-3">
           <h4 className="text-sm font-medium text-text uppercase tracking-wide">Edit KP Winners</h4>
-          <p className="text-text-dim text-xs">Leave blank if no winner — money goes back to pot</p>
-          <div className="grid grid-cols-2 gap-3">
-            {holes.map((hole) => (
-              <div key={hole} className="relative">
-                <label className="block text-xs text-text-dim mb-1">Hole {hole}</label>
-                <input
-                  type="text"
-                  value={kpEntries[hole] ?? ''}
-                  onChange={(e) => handleKPChange(hole, e.target.value)}
-                  onFocus={() => setKpActiveHole(hole)}
-                  onBlur={() => setTimeout(() => { setKpActiveHole(null); setKpSuggestions([]); }, 200)}
-                  placeholder="Player name"
-                  className="w-full bg-background border border-border-accent rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-teal"
-                />
-                {kpActiveHole === hole && kpSuggestions.length > 0 && (
-                  <div className="absolute z-10 mt-1 w-full bg-card border border-border-accent rounded-lg shadow-lg overflow-hidden">
-                    {kpSuggestions.map((name) => (
-                      <button
-                        key={name}
-                        onMouseDown={() => selectKPSuggestion(hole, name)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-card-highlight text-text"
-                      >
-                        {name}
-                      </button>
-                    ))}
+          <p className="text-text-dim text-xs">
+            {state.rules.kpCashCount} cash prizes available — any extra KP winners get a sleeve of balls (no cash, no effect on payouts).
+            Blank winner = no winner, money returns to pot.
+          </p>
+          <div className="space-y-2">
+            {kpRows.map((row) => {
+              const hasPlayer = !!row.player.trim();
+              const computed = state.results?.kps.find(k => k.hole === row.hole && !k.pending)?.prize;
+              const effectivePrize = row.prize ?? computed ?? 'cash';
+              return (
+                <div key={row.id} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={row.hole}
+                    onChange={(e) => updateKpRow(row.id, { hole: e.target.value })}
+                    placeholder="#5"
+                    className="w-16 shrink-0 bg-background border border-border-accent rounded-lg px-2 py-2 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-teal"
+                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={row.player}
+                      onChange={(e) => handleKPChange(row.id, e.target.value)}
+                      onFocus={() => setKpActiveRow(row.id)}
+                      onBlur={() => setTimeout(() => { setKpActiveRow(null); setKpSuggestions([]); }, 200)}
+                      placeholder="Player name"
+                      className="w-full bg-background border border-border-accent rounded-lg px-3 py-2 text-sm text-text placeholder:text-text-dim focus:outline-none focus:border-teal"
+                    />
+                    {kpActiveRow === row.id && kpSuggestions.length > 0 && (
+                      <div className="absolute z-10 mt-1 w-full bg-card border border-border-accent rounded-lg shadow-lg overflow-hidden">
+                        {kpSuggestions.map((name) => (
+                          <button
+                            key={name}
+                            onMouseDown={() => selectKPSuggestion(row.id, name)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-card-highlight text-text"
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ))}
+                  {hasPlayer ? (
+                    <div className="flex shrink-0 rounded-lg overflow-hidden border border-border-accent">
+                      <button
+                        onClick={() => updateKpRow(row.id, { prize: 'cash' })}
+                        className={`px-3 py-2 text-xs font-medium transition-colors ${
+                          effectivePrize === 'cash' ? 'bg-emerald text-background' : 'text-text-muted hover:text-text'
+                        }`}
+                      >
+                        Cash
+                      </button>
+                      <button
+                        onClick={() => updateKpRow(row.id, { prize: 'balls' })}
+                        className={`px-3 py-2 text-xs font-medium transition-colors ${
+                          effectivePrize === 'balls' ? 'bg-amber text-background' : 'text-text-muted hover:text-text'
+                        }`}
+                      >
+                        Balls
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 w-[88px]" />
+                  )}
+                  <button
+                    onClick={() => removeKpRow(row.id)}
+                    title="Remove KP"
+                    className="shrink-0 px-2 py-2 text-text-dim hover:text-red transition-colors"
+                  >
+                    ✕
+                  </button>
+                </div>
+              );
+            })}
           </div>
-          <div className="flex gap-2">
+          <button onClick={addKpRow} className="text-teal text-sm font-medium hover:text-teal/80">
+            + Add KP
+          </button>
+          <div className="flex gap-2 pt-1">
             <button
               onClick={saveKPs}
               className="bg-teal text-background font-medium px-4 py-2 rounded-lg hover:bg-teal/90 text-sm"

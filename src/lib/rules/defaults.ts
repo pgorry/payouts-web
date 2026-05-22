@@ -18,6 +18,7 @@ export const DEFAULT_RULES: RulesConfig = {
   entryFee: 15,
   deuceContribution: 3,
   kpHoles: ['#2', '#7', '#12', '#16'],
+  kpCashCount: 4,
   kpPrizeOver32: 15,
   kpPrizeUnder32: 10,
   slotsPercent: 0.80,
