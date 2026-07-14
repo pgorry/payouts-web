@@ -12,6 +12,17 @@ export interface Player {
   parPoints?: number;
 }
 
+/**
+ * A player who bought into the KP tournament only (the $2 entry) rather than
+ * the full competition. They are eligible to win KPs, and they push the KP
+ * field size up — but they contribute nothing to the deuce pot and cannot win
+ * slots, par points or deuces.
+ */
+export interface KpOnlyPlayer extends Player {
+  /** The label from the entry list's Event column, e.g. "LvR". Display only. */
+  event?: string;
+}
+
 export interface SlotTeam {
   place: number;
   players: Player[];
@@ -44,6 +55,8 @@ export interface RoundData {
   round: RoundInput;
   players: Player[];
   openPlayPlayers: Player[];
+  /** KP-only ($2) entrants, from the optional entry-list upload. */
+  kpOnlyPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   parPointWinners: ParPointWinner[];
@@ -71,6 +84,14 @@ export interface RulesConfig {
   openPlayEntryFee: number;
   openPlayDeuceContribution: number;
   openPlayKpContribution: number;
+  /**
+   * Entry fee for a KP-only player. Their money is NOT used to inflate the KP
+   * prizes — it drops into the general pot and is split slots/par points along
+   * with everything else. What their presence does do is push the KP field size
+   * up, which can lift the per-KP prize from the under- to the over-threshold
+   * rate.
+   */
+  kpOnlyEntryFee: number;
 }
 
 // --- Output types ---
@@ -85,6 +106,11 @@ export interface MoneyPool {
   parPointsPool: number;
   playerCount: number;
   openPlayPlayerCount: number;
+  kpOnlyPlayerCount: number;
+  /** Money collected from KP-only entrants, folded into `remaining`. */
+  kpOnlyCollected: number;
+  /** Everyone entered in the KP tournament — drives the per-KP prize rate. */
+  kpFieldCount: number;
 }
 
 export interface DeuceResult {
@@ -134,6 +160,8 @@ export interface PlayerCharge {
   won: number;
   breakdown: string;
   net: number;
+  /** Which entry tier this player bought into. */
+  tier: 'full' | 'open-play' | 'kp-only';
 }
 
 export interface PayoutResults {

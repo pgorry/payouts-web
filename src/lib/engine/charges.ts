@@ -11,15 +11,18 @@ import { formatPlace } from '@/lib/format';
 export function calculateCharges(
   players: Player[],
   openPlayPlayers: Player[],
+  kpOnlyPlayers: Player[],
   deuces: DeuceResult,
   kps: KPResult[],
   slots: SlotResult[],
   parPoints: ParPointResult[],
   entryFee: number,
   openPlayEntryFee: number,
+  kpOnlyEntryFee: number,
 ): PlayerCharge[] {
   const realPlayers = players.filter(p => !p.isPro);
   const realOpenPlay = openPlayPlayers.filter(p => !p.isPro);
+  const realKpOnly = kpOnlyPlayers.filter(p => !p.isPro);
   const winnings = new Map<string, { total: number; parts: string[] }>();
 
   const addWinning = (name: string, amount: number, label: string) => {
@@ -77,6 +80,7 @@ export function calculateCharges(
       won: w ? w.total : 0,
       breakdown: w ? w.parts.join(' + ') : '',
       net: (w ? w.total : 0) - entryFee,
+      tier: 'full' as const,
     };
   });
   const openPlayCharges: PlayerCharge[] = realOpenPlay.map(p => {
@@ -87,9 +91,21 @@ export function calculateCharges(
       won: w ? w.total : 0,
       breakdown: w ? w.parts.join(' + ') : '',
       net: (w ? w.total : 0) - openPlayEntryFee,
+      tier: 'open-play' as const,
     };
   });
-  const charges: PlayerCharge[] = [...slotsCharges, ...openPlayCharges];
+  const kpOnlyCharges: PlayerCharge[] = realKpOnly.map(p => {
+    const w = winnings.get(p.name);
+    return {
+      name: p.name,
+      charge: kpOnlyEntryFee,
+      won: w ? w.total : 0,
+      breakdown: w ? w.parts.join(' + ') : '',
+      net: (w ? w.total : 0) - kpOnlyEntryFee,
+      tier: 'kp-only' as const,
+    };
+  });
+  const charges: PlayerCharge[] = [...slotsCharges, ...openPlayCharges, ...kpOnlyCharges];
 
   // Sort: winners by total desc, then non-winners alphabetically
   charges.sort((a, b) => {

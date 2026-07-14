@@ -43,17 +43,45 @@ function resolvePlayerName(input: string, players: Player[]): string {
   return trimmed;
 }
 
+/** Name key that ignores case and "Last, First" vs "First Last" ordering. */
+function nameKey(name: string): string {
+  const trimmed = name.trim().toLowerCase();
+  const parts = trimmed.includes(',')
+    ? trimmed.split(',').map(s => s.trim())
+    : trimmed.split(/\s+/);
+  return [...parts].sort().join('|');
+}
+
 export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutResults {
-  const realPlayers = data.players.filter(p => !p.isPro);
+  const kpOnlyRoster = data.kpOnlyPlayers ?? [];
+
+  // The entry list is the authority on what a player paid. If someone shows up
+  // on the leaderboard *and* on the entry list as a KP-only ($2) entrant, the
+  // entry list wins — otherwise they'd be charged the full entry and the $2,
+  // and counted twice in the field.
+  const kpOnlyKeys = new Set(kpOnlyRoster.map(p => nameKey(p.name)));
+  const fullRoster =
+    kpOnlyKeys.size > 0
+      ? data.players.filter(p => !kpOnlyKeys.has(nameKey(p.name)))
+      : data.players;
+
+  const realPlayers = fullRoster.filter(p => !p.isPro);
   const playerCount = realPlayers.length;
   const openPlayPlayers = data.openPlayPlayers.filter(p => !p.isPro);
   const openPlayCount = openPlayPlayers.length;
+  const kpOnlyPlayers = kpOnlyRoster.filter(p => !p.isPro);
+  const kpOnlyCount = kpOnlyPlayers.length;
 
-  const pool = calculatePool(playerCount, rules, openPlayCount);
+  const pool = calculatePool(playerCount, rules, openPlayCount, kpOnlyCount);
   const deuces = calculateDeuces(data.round, data.deuces, pool.deucePot);
 
-  // Open-play players are eligible to win KPs, so resolve names against both rosters
-  const allEligibleKpPlayers = [...data.players, ...data.openPlayPlayers];
+  // Open-play and KP-only players are eligible to win KPs, so resolve names
+  // against every roster.
+  const allEligibleKpPlayers = [
+    ...fullRoster,
+    ...data.openPlayPlayers,
+    ...kpOnlyRoster,
+  ];
 
   // Resolve every KP hole to its winner (if any) and carry the manual override.
   const resolvedHoles = rules.kpHoles.map(hole => {
@@ -119,14 +147,16 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   });
 
   const charges = calculateCharges(
-    data.players,
+    fullRoster,
     data.openPlayPlayers,
+    kpOnlyRoster,
     deuces,
     kps,
     slots,
     parPoints,
     rules.entryFee,
     rules.openPlayEntryFee,
+    rules.kpOnlyEntryFee,
   );
 
   const totalPaidOut = charges.reduce((sum, c) => sum + c.won, 0);

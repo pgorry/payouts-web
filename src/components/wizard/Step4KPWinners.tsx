@@ -21,7 +21,14 @@ export function Step4KPWinners() {
   const [showAceSuggestions, setShowAceSuggestions] = useState(false);
   const [aceSearch, setAceSearch] = useState(round.aceWinner ?? '');
 
-  const playerNames = state.players.filter(p => !p.isPro).map(p => p.name);
+  // Open-play and KP-only ($2) entrants are all eligible KP winners.
+  const playerNames = [
+    ...state.players,
+    ...state.openPlayPlayers,
+    ...state.kpOnlyPlayers,
+  ]
+    .filter(p => !p.isPro)
+    .map(p => p.name);
 
   const handleChange = (hole: string, value: string) => {
     setKpEntries(prev => ({ ...prev, [hole]: value }));
@@ -58,7 +65,10 @@ export function Step4KPWinners() {
     setShowAceSuggestions(false);
   };
 
-  const aceSuggestions = playerNames.filter(name =>
+  // The ace pays out of the deuce pot, which KP-only entrants don't buy into —
+  // so only full-competition players can be named as the ace winner.
+  const acePlayerNames = state.players.filter(p => !p.isPro).map(p => p.name);
+  const aceSuggestions = acePlayerNames.filter(name =>
     name.toLowerCase().includes(aceSearch.toLowerCase())
   ).slice(0, 5);
 

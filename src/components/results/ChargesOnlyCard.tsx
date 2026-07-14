@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import type { PayoutResults } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { TierBadge } from './TierBadge';
 
 interface ChargesOnlyCardProps {
   results: PayoutResults;
@@ -23,6 +24,7 @@ export const ChargesOnlyCard = forwardRef<HTMLDivElement, ChargesOnlyCardProps>(
             <div className="text-text-muted text-base">
               {formatDate(results.date)} • {pool.playerCount} Players
               {pool.openPlayPlayerCount > 0 && ` + ${pool.openPlayPlayerCount} Open Play`}
+              {pool.kpOnlyPlayerCount > 0 && ` + ${pool.kpOnlyPlayerCount} KP Only`}
             </div>
           </div>
           <img src="UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
@@ -38,7 +40,7 @@ export const ChargesOnlyCard = forwardRef<HTMLDivElement, ChargesOnlyCardProps>(
           <tbody>
             {sortedCharges.map((c) => (
               <tr key={c.name}>
-                <td className="py-2.5 px-3 text-sm">{c.name}</td>
+                <td className="py-2.5 px-3 text-sm">{c.name}<TierBadge tier={c.tier} /></td>
                 <td className="py-2.5 px-3 text-sm text-right text-red font-semibold">{formatCurrency(c.charge)}</td>
               </tr>
             ))}

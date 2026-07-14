@@ -1,6 +1,7 @@
 import { forwardRef } from 'react';
 import type { PayoutResults } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/format';
+import { TierBadge } from './TierBadge';
 
 interface ChargesCardProps {
   results: PayoutResults;
@@ -23,6 +24,7 @@ export const ChargesCard = forwardRef<HTMLDivElement, ChargesCardProps>(
             <h1 className="text-teal text-2xl font-bold">UGC Mens Charges & Payouts</h1>
             <div className="text-text-muted text-base">
               {formatDate(results.date)} • {pool.playerCount} Players
+              {pool.kpOnlyPlayerCount > 0 && ` + ${pool.kpOnlyPlayerCount} KP only`}
             </div>
           </div>
           <img src="UGC-Logo-2.png" alt="UGC" className="h-14 w-auto bg-white/90 rounded-lg p-1" />
@@ -45,7 +47,7 @@ export const ChargesCard = forwardRef<HTMLDivElement, ChargesCardProps>(
           <tbody>
             {winners.map((c) => (
               <tr key={c.name} className="bg-card-highlight">
-                <td className="py-2.5 px-3 text-sm">{c.name}</td>
+                <td className="py-2.5 px-3 text-sm">{c.name}<TierBadge tier={c.tier} /></td>
                 <td className="py-2.5 px-3 text-sm text-right text-red">{formatCurrency(c.charge)}</td>
                 <td className="py-2.5 px-3 text-sm text-right text-emerald">{formatCurrency(c.won)}</td>
                 <td className={`py-2.5 px-3 text-sm text-right font-bold ${c.net >= 0 ? 'text-emerald' : 'text-red'}`}>
@@ -63,7 +65,7 @@ export const ChargesCard = forwardRef<HTMLDivElement, ChargesCardProps>(
 
             {nonWinners.map((c) => (
               <tr key={c.name}>
-                <td className="py-2.5 px-3 text-sm">{c.name}</td>
+                <td className="py-2.5 px-3 text-sm">{c.name}<TierBadge tier={c.tier} /></td>
                 <td className="py-2.5 px-3 text-sm text-right text-red">{formatCurrency(c.charge)}</td>
                 <td className="py-2.5 px-3 text-sm text-right text-emerald">—</td>
                 <td className="py-2.5 px-3 text-sm text-right font-bold text-red">-{formatCurrency(c.charge)}</td>

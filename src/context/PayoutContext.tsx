@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type {
   RoundInput,
   Player,
+  KpOnlyPlayer,
   SlotTeam,
   DeuceEntry,
   ParPointWinner,
@@ -28,6 +29,7 @@ export interface WizardState {
   round: RoundInput;
   players: Player[];
   openPlayPlayers: Player[];
+  kpOnlyPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   parPointWinners: ParPointWinner[];
@@ -35,6 +37,8 @@ export interface WizardState {
   rules: RulesConfig;
   results: PayoutResults | null;
   xlsLoaded: boolean;
+  /** Name of the optional entry-list file, if one was uploaded. */
+  entryListFileName: string | null;
 }
 
 type Action =
@@ -47,6 +51,8 @@ type Action =
   | { type: 'SET_KP_WINNERS'; payload: KPWinner[] }
   | { type: 'SET_RULES'; payload: RulesConfig }
   | { type: 'SET_RESULTS'; payload: PayoutResults }
+  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; fileName: string } }
+  | { type: 'CLEAR_ENTRY_LIST' }
   | { type: 'GO_TO_STEP'; payload: number }
   | { type: 'RESET' };
 
@@ -55,6 +61,7 @@ const initialState: WizardState = {
   round: { date: getPreviousSunday(), hasAce: false },
   players: [],
   openPlayPlayers: [],
+  kpOnlyPlayers: [],
   slotTeams: [],
   deuces: [],
   parPointWinners: [],
@@ -62,6 +69,7 @@ const initialState: WizardState = {
   rules: DEFAULT_RULES,
   results: null,
   xlsLoaded: false,
+  entryListFileName: null,
 };
 
 function reducer(state: WizardState, action: Action): WizardState {
@@ -101,6 +109,14 @@ function reducer(state: WizardState, action: Action): WizardState {
       return { ...state, rules: action.payload };
     case 'SET_RESULTS':
       return { ...state, results: action.payload };
+    case 'SET_ENTRY_LIST':
+      return {
+        ...state,
+        kpOnlyPlayers: action.payload.kpOnlyPlayers,
+        entryListFileName: action.payload.fileName,
+      };
+    case 'CLEAR_ENTRY_LIST':
+      return { ...state, kpOnlyPlayers: [], entryListFileName: null };
     case 'GO_TO_STEP':
       return { ...state, currentStep: action.payload };
     case 'RESET':

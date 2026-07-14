@@ -37,7 +37,9 @@ export function Step2Confirm() {
   const [showAceSuggestions, setShowAceSuggestions] = useState(false);
   const [aceSearch, setAceSearch] = useState(round.aceWinner ?? '');
 
-  const playerNames = [...realPlayers, ...openPlayPlayers].map(p => p.name);
+  // KP-only ($2) entrants can win KPs, so they belong in the autocomplete too.
+  const kpOnlyPlayers = state.kpOnlyPlayers.filter(p => !p.isPro);
+  const playerNames = [...realPlayers, ...openPlayPlayers, ...kpOnlyPlayers].map(p => p.name);
 
   const updateRow = (id: number, patch: Partial<KpRow>) =>
     setKpRows(prev => prev.map(r => (r.id === id ? { ...r, ...patch } : r)));
@@ -72,7 +74,10 @@ export function Step2Confirm() {
     setShowAceSuggestions(false);
   };
 
-  const aceSuggestions = playerNames.filter(name =>
+  // The ace pays out of the deuce pot, which KP-only entrants don't buy into —
+  // so only full-competition players can be named as the ace winner.
+  const acePlayerNames = realPlayers.map(p => p.name);
+  const aceSuggestions = acePlayerNames.filter(name =>
     name.toLowerCase().includes(aceSearch.toLowerCase())
   ).slice(0, 5);
 
@@ -99,6 +104,7 @@ export function Step2Confirm() {
         round: state.round,
         players: state.players,
         openPlayPlayers: state.openPlayPlayers,
+        kpOnlyPlayers: state.kpOnlyPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
         parPointWinners: state.parPointWinners,
