@@ -57,6 +57,12 @@ export interface RoundData {
   openPlayPlayers: Player[];
   /** KP-only ($2) entrants, from the optional entry-list upload. */
   kpOnlyPlayers: KpOnlyPlayer[];
+  /**
+   * "No-slots" ($10) entrants (e.g. players stuck in a twosome who couldn't
+   * play slots), from the optional entry-list upload. They play deuce, KP and
+   * par points — everything but slots.
+   */
+  noSlotsPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
   parPointWinners: ParPointWinner[];
@@ -92,6 +98,12 @@ export interface RulesConfig {
    * rate.
    */
   kpOnlyEntryFee: number;
+  /**
+   * Entry fee for a "no-slots" player — everything but slots (deuce + KP + par
+   * points). Like the other partial tiers, their money does NOT inflate the KP
+   * prizes; the residual drops into the general pot. They can win par points.
+   */
+  noSlotsEntryFee: number;
 }
 
 // --- Output types ---
@@ -107,8 +119,11 @@ export interface MoneyPool {
   playerCount: number;
   openPlayPlayerCount: number;
   kpOnlyPlayerCount: number;
+  noSlotsPlayerCount: number;
   /** Money collected from KP-only entrants, folded into `remaining`. */
   kpOnlyCollected: number;
+  /** Money collected from no-slots ($10) entrants, folded into `remaining`. */
+  noSlotsCollected: number;
   /** Everyone entered in the KP tournament — drives the per-KP prize rate. */
   kpFieldCount: number;
 }
@@ -161,7 +176,7 @@ export interface PlayerCharge {
   breakdown: string;
   net: number;
   /** Which entry tier this player bought into. */
-  tier: 'full' | 'open-play' | 'kp-only';
+  tier: 'full' | 'open-play' | 'no-slots' | 'kp-only';
 }
 
 export interface PayoutResults {

@@ -29,4 +29,5 @@ export const DEFAULT_RULES: RulesConfig = {
   openPlayDeuceContribution: 3,
   openPlayKpContribution: 2,
   kpOnlyEntryFee: 2,
+  noSlotsEntryFee: 10,
 };

@@ -72,7 +72,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   // The entry list is the authority on what a player paid. A player can be
   // listed on the leaderboard *and* on the entry list at a partial tier; the
   // cheaper tier wins so nobody is charged twice or counted twice in the field.
-  // Priority: KP-only ($2) > open-play ($5) > full entry ($15).
+  // Priority: KP-only ($2) > open-play ($5) > no-slots ($10) > full entry ($15).
   const kpOnlyRoster = dedupe(data.kpOnlyPlayers ?? []);
   const kpOnlyKeys = new Set(kpOnlyRoster.map(p => nameKey(p.name)));
 
@@ -82,11 +82,19 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   const openPlayRoster = dedupe(data.openPlayPlayers, kpOnlyKeys);
   const openPlayKeys = new Set(openPlayRoster.map(p => nameKey(p.name)));
 
+  // No-slots ($10) players come from the entry list only; drop anyone already
+  // claimed by a cheaper tier.
+  const noSlotsRoster = dedupe(
+    data.noSlotsPlayers ?? [],
+    new Set([...kpOnlyKeys, ...openPlayKeys]),
+  );
+  const noSlotsKeys = new Set(noSlotsRoster.map(p => nameKey(p.name)));
+
   // Anyone the entry list marks as a partial entrant is removed from the full
   // (paying) field.
   const fullRoster = data.players.filter(p => {
     const k = nameKey(p.name);
-    return !kpOnlyKeys.has(k) && !openPlayKeys.has(k);
+    return !kpOnlyKeys.has(k) && !openPlayKeys.has(k) && !noSlotsKeys.has(k);
   });
 
   const realPlayers = fullRoster.filter(p => !p.isPro);
@@ -95,8 +103,10 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   const openPlayCount = openPlayPlayers.length;
   const kpOnlyPlayers = kpOnlyRoster.filter(p => !p.isPro);
   const kpOnlyCount = kpOnlyPlayers.length;
+  const noSlotsPlayers = noSlotsRoster.filter(p => !p.isPro);
+  const noSlotsCount = noSlotsPlayers.length;
 
-  const pool = calculatePool(playerCount, rules, openPlayCount, kpOnlyCount);
+  const pool = calculatePool(playerCount, rules, openPlayCount, kpOnlyCount, noSlotsCount);
   const deuces = calculateDeuces(data.round, data.deuces, pool.deucePot);
 
   // Open-play and KP-only players are eligible to win KPs, so resolve names
@@ -104,6 +114,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   const allEligibleKpPlayers = [
     ...fullRoster,
     ...openPlayRoster,
+    ...noSlotsRoster,
     ...kpOnlyRoster,
   ];
 
@@ -173,6 +184,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   const charges = calculateCharges(
     fullRoster,
     openPlayRoster,
+    noSlotsRoster,
     kpOnlyRoster,
     deuces,
     kps,
@@ -180,6 +192,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
     parPoints,
     rules.entryFee,
     rules.openPlayEntryFee,
+    rules.noSlotsEntryFee,
     rules.kpOnlyEntryFee,
   );
 

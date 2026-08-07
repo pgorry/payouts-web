@@ -6,6 +6,8 @@ export interface ParsedEntryList {
   fullEntryPlayers: Player[];
   /** Players who paid the open-play fee ($5): deuce + KP, no slots/par points. */
   openPlayPlayers: KpOnlyPlayer[];
+  /** Players who paid the no-slots fee ($10): everything but slots. */
+  noSlotsPlayers: KpOnlyPlayer[];
   /** Players who paid the KP-only fee ($2). */
   kpOnlyPlayers: KpOnlyPlayer[];
   /** Rows we couldn't classify (unrecognised fee), for a warning in the UI. */
@@ -39,8 +41,11 @@ function findColumns(rows: unknown[][]): { headerRow: number; cols: Record<strin
       if (idx >= 0) cols[key] = idx;
     }
 
-    // A usable entry list needs a name, an event and a fee.
-    if (cols.lastName !== undefined && cols.event !== undefined && cols.fee !== undefined) {
+    // A usable entry list needs a name and a fee. The Event column is optional —
+    // newer exports ("Alphabetical Player List") drop it in favour of an Amount
+    // column and a "Club Category Type" column, and we classify on the amount
+    // paid regardless.
+    if (cols.lastName !== undefined && cols.fee !== undefined) {
       return { headerRow: i, cols };
     }
   }
@@ -80,6 +85,7 @@ export function parseEntryListXLS(
   fullEntryFee: number,
   kpOnlyFee: number,
   openPlayFee: number,
+  noSlotsFee: number,
 ): ParsedEntryList {
   const wb = XLSX.read(buffer, { type: 'array' });
 
@@ -94,6 +100,7 @@ export function parseEntryListXLS(
     const { headerRow, cols } = found;
     const fullEntryPlayers: Player[] = [];
     const openPlayPlayers: KpOnlyPlayer[] = [];
+    const noSlotsPlayers: KpOnlyPlayer[] = [];
     const kpOnlyPlayers: KpOnlyPlayer[] = [];
     const unknownFeeRows: { name: string; event: string; fee: number }[] = [];
     const feesSeen = new Set<number>();
@@ -128,6 +135,8 @@ export function parseEntryListXLS(
         kpOnlyPlayers.push({ name, isPro, event });
       } else if (fee === openPlayFee) {
         openPlayPlayers.push({ name, isPro, event });
+      } else if (fee === noSlotsFee) {
+        noSlotsPlayers.push({ name, isPro, event });
       } else if (fee >= fullEntryFee) {
         fullEntryPlayers.push({ name, isPro });
       } else {
@@ -138,6 +147,7 @@ export function parseEntryListXLS(
     return {
       fullEntryPlayers,
       openPlayPlayers,
+      noSlotsPlayers,
       kpOnlyPlayers,
       unknownFeeRows,
       feesSeen: [...feesSeen].sort((a, b) => a - b),

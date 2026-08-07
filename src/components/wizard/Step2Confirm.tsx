@@ -105,6 +105,7 @@ export function Step2Confirm() {
         round: state.round,
         players: state.players,
         openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
+        noSlotsPlayers: state.entryListNoSlotsPlayers,
         kpOnlyPlayers: state.kpOnlyPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,

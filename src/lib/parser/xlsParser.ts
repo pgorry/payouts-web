@@ -23,7 +23,13 @@ export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
   const wb = XLSX.read(buffer, { type: 'array' });
   const sheetNames = wb.SheetNames;
 
-  const parPointsSheet = findSheet(wb, 'par points');
+  // Newer exports split par points into an individual sheet ("modified scoring
+  // par points") and a foursome/team sheet ("par points"). Older exports had a
+  // single "par points" sheet with the individual scores. Prefer the individual
+  // sheet — the source for the player roster and par-point winners — and fall
+  // back to the plain "par points" sheet for the old format.
+  const parPointsSheet =
+    findSheet(wb, 'modified scoring par points') ?? findSheet(wb, 'par points');
   const players = parseParPointsSheet(parPointsSheet);
   const parPointWinners = extractParPointWinners(parPointsSheet);
   const openPlayPlayers = parseOpenPlaySheet(findSheet(wb, 'general open play'));
@@ -87,10 +93,14 @@ function parseParPointsSheet(sheet: XLSX.WorkSheet | undefined): Player[] {
     const playerName = String(row[1] ?? '').trim();
     if (!playerName) continue;
 
-    // Check for "Pro for Slots" in any column
-    const isPro = row.some(cell =>
-      typeof cell === 'string' && cell.toLowerCase().includes('pro for slots')
-    );
+    // "Pro for Slots" placeholders are named with a "Z-" prefix (e.g.
+    // "Z- Woods, Tiger") so they sort last. The individual par-points sheet
+    // doesn't repeat the "Pro for Slots" label, so key off the prefix too.
+    const isPro =
+      /^z-\s/i.test(playerName) ||
+      row.some(cell =>
+        typeof cell === 'string' && cell.toLowerCase().includes('pro for slots')
+      );
 
     // Find the score (last numeric column)
     let score = 0;

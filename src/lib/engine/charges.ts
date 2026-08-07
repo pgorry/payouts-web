@@ -11,6 +11,7 @@ import { formatPlace } from '@/lib/format';
 export function calculateCharges(
   players: Player[],
   openPlayPlayers: Player[],
+  noSlotsPlayers: Player[],
   kpOnlyPlayers: Player[],
   deuces: DeuceResult,
   kps: KPResult[],
@@ -18,10 +19,12 @@ export function calculateCharges(
   parPoints: ParPointResult[],
   entryFee: number,
   openPlayEntryFee: number,
+  noSlotsEntryFee: number,
   kpOnlyEntryFee: number,
 ): PlayerCharge[] {
   const realPlayers = players.filter(p => !p.isPro);
   const realOpenPlay = openPlayPlayers.filter(p => !p.isPro);
+  const realNoSlots = noSlotsPlayers.filter(p => !p.isPro);
   const realKpOnly = kpOnlyPlayers.filter(p => !p.isPro);
   const winnings = new Map<string, { total: number; parts: string[] }>();
 
@@ -94,6 +97,17 @@ export function calculateCharges(
       tier: 'open-play' as const,
     };
   });
+  const noSlotsCharges: PlayerCharge[] = realNoSlots.map(p => {
+    const w = winnings.get(p.name);
+    return {
+      name: p.name,
+      charge: noSlotsEntryFee,
+      won: w ? w.total : 0,
+      breakdown: w ? w.parts.join(' + ') : '',
+      net: (w ? w.total : 0) - noSlotsEntryFee,
+      tier: 'no-slots' as const,
+    };
+  });
   const kpOnlyCharges: PlayerCharge[] = realKpOnly.map(p => {
     const w = winnings.get(p.name);
     return {
@@ -105,7 +119,12 @@ export function calculateCharges(
       tier: 'kp-only' as const,
     };
   });
-  const charges: PlayerCharge[] = [...slotsCharges, ...openPlayCharges, ...kpOnlyCharges];
+  const charges: PlayerCharge[] = [
+    ...slotsCharges,
+    ...openPlayCharges,
+    ...noSlotsCharges,
+    ...kpOnlyCharges,
+  ];
 
   // Sort: winners by total desc, then non-winners alphabetically
   charges.sort((a, b) => {

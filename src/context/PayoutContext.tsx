@@ -32,6 +32,8 @@ export interface WizardState {
   openPlayPlayers: Player[];
   /** Open-play ($5) players from the optional entry-list upload. */
   entryListOpenPlayPlayers: KpOnlyPlayer[];
+  /** No-slots ($10) players from the optional entry-list upload. */
+  entryListNoSlotsPlayers: KpOnlyPlayer[];
   kpOnlyPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
@@ -54,7 +56,7 @@ type Action =
   | { type: 'SET_KP_WINNERS'; payload: KPWinner[] }
   | { type: 'SET_RULES'; payload: RulesConfig }
   | { type: 'SET_RESULTS'; payload: PayoutResults }
-  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; openPlayPlayers: KpOnlyPlayer[]; fileName: string } }
+  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; openPlayPlayers: KpOnlyPlayer[]; noSlotsPlayers: KpOnlyPlayer[]; fileName: string } }
   | { type: 'CLEAR_ENTRY_LIST' }
   | { type: 'GO_TO_STEP'; payload: number }
   | { type: 'RESET' };
@@ -65,6 +67,7 @@ const initialState: WizardState = {
   players: [],
   openPlayPlayers: [],
   entryListOpenPlayPlayers: [],
+  entryListNoSlotsPlayers: [],
   kpOnlyPlayers: [],
   slotTeams: [],
   deuces: [],
@@ -118,6 +121,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         ...state,
         kpOnlyPlayers: action.payload.kpOnlyPlayers,
         entryListOpenPlayPlayers: action.payload.openPlayPlayers,
+        entryListNoSlotsPlayers: action.payload.noSlotsPlayers,
         entryListFileName: action.payload.fileName,
       };
     case 'CLEAR_ENTRY_LIST':
@@ -125,6 +129,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         ...state,
         kpOnlyPlayers: [],
         entryListOpenPlayPlayers: [],
+        entryListNoSlotsPlayers: [],
         entryListFileName: null,
       };
     case 'GO_TO_STEP':

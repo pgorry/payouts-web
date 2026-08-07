@@ -22,6 +22,7 @@ export function Step2DataEntry() {
         rules.entryFee,
         rules.kpOnlyEntryFee,
         rules.openPlayEntryFee,
+        rules.noSlotsEntryFee,
       );
       setEntryList(parsed);
       setEntryListError(null);
@@ -30,6 +31,7 @@ export function Step2DataEntry() {
         payload: {
           kpOnlyPlayers: parsed.kpOnlyPlayers,
           openPlayPlayers: parsed.openPlayPlayers,
+          noSlotsPlayers: parsed.noSlotsPlayers,
           fileName,
         },
       });
@@ -48,8 +50,9 @@ export function Step2DataEntry() {
 
   const kpOnlyCount = entryList?.kpOnlyPlayers.filter(p => !p.isPro).length ?? 0;
   const openPlayCount = entryList?.openPlayPlayers.filter(p => !p.isPro).length ?? 0;
+  const noSlotsCount = entryList?.noSlotsPlayers.filter(p => !p.isPro).length ?? 0;
   const fullEntryCount = entryList?.fullEntryPlayers.filter(p => !p.isPro).length ?? 0;
-  const kpFieldCount = fullEntryCount + openPlayCount + kpOnlyCount;
+  const kpFieldCount = fullEntryCount + openPlayCount + noSlotsCount + kpOnlyCount;
 
   const handleFileLoaded = (buffer: ArrayBuffer, fileName: string) => {
     try {
@@ -186,7 +189,8 @@ export function Step2DataEntry() {
         <p className="text-text-muted text-sm">
           Only needed when some players didn't buy the full competition. The app
           splits players by what they paid: {formatCurrency(rules.entryFee)} full
-          entry, {formatCurrency(rules.openPlayEntryFee)} deuce + KP, or{' '}
+          entry, {formatCurrency(rules.noSlotsEntryFee)} twosome (everything but
+          slots), {formatCurrency(rules.openPlayEntryFee)} deuce + KP, or{' '}
           {formatCurrency(rules.kpOnlyEntryFee)} KP only. Skip this and everyone is
           charged the full entry, as usual.
         </p>
@@ -201,12 +205,18 @@ export function Step2DataEntry() {
 
         {entryList && (
           <div className="bg-card rounded-xl p-4 space-y-3 border border-border">
-            <div className="grid grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="bg-card-highlight rounded-lg p-3">
                 <div className="text-teal font-semibold text-lg">
                   {fullEntryCount} × {formatCurrency(rules.entryFee)}
                 </div>
                 <div className="text-text-muted">Full Entry</div>
+              </div>
+              <div className="bg-card-highlight rounded-lg p-3">
+                <div className="text-amber font-semibold text-lg">
+                  {noSlotsCount} × {formatCurrency(rules.noSlotsEntryFee)}
+                </div>
+                <div className="text-text-muted">Twosome (no slots)</div>
               </div>
               <div className="bg-card-highlight rounded-lg p-3">
                 <div className="text-amber font-semibold text-lg">
@@ -222,10 +232,12 @@ export function Step2DataEntry() {
               </div>
             </div>
 
-            {(kpOnlyCount > 0 || openPlayCount > 0) && (
+            {(kpOnlyCount > 0 || openPlayCount > 0 || noSlotsCount > 0) && (
               <p className="text-xs text-text-dim">
                 Partial entrants count toward the KP field ({kpFieldCount} entrants,
-                which sets the per-KP prize) but not toward slots or par points.
+                which sets the per-KP prize).
+                {noSlotsCount > 0 &&
+                  ` Twosome players play everything but slots — deuce, KP and par points.`}
                 {openPlayCount > 0 &&
                   ` Deuce + KP players also pay into the deuce pot (${formatCurrency(rules.openPlayDeuceContribution)} each).`}
               </p>
@@ -236,6 +248,7 @@ export function Step2DataEntry() {
                 {entryList.unknownFeeRows.length} row
                 {entryList.unknownFeeRows.length === 1 ? '' : 's'} had an unrecognised fee
                 (not {formatCurrency(rules.entryFee)},{' '}
+                {formatCurrency(rules.noSlotsEntryFee)},{' '}
                 {formatCurrency(rules.openPlayEntryFee)} or{' '}
                 {formatCurrency(rules.kpOnlyEntryFee)}) and{' '}
                 {entryList.unknownFeeRows.length === 1 ? 'was' : 'were'} skipped:{' '}
