@@ -28,7 +28,10 @@ export interface WizardState {
   currentStep: number;
   round: RoundInput;
   players: Player[];
+  /** Open-play ($5) players from the leaderboard's "General Open Play" sheet. */
   openPlayPlayers: Player[];
+  /** Open-play ($5) players from the optional entry-list upload. */
+  entryListOpenPlayPlayers: KpOnlyPlayer[];
   kpOnlyPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
@@ -51,7 +54,7 @@ type Action =
   | { type: 'SET_KP_WINNERS'; payload: KPWinner[] }
   | { type: 'SET_RULES'; payload: RulesConfig }
   | { type: 'SET_RESULTS'; payload: PayoutResults }
-  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; fileName: string } }
+  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; openPlayPlayers: KpOnlyPlayer[]; fileName: string } }
   | { type: 'CLEAR_ENTRY_LIST' }
   | { type: 'GO_TO_STEP'; payload: number }
   | { type: 'RESET' };
@@ -61,6 +64,7 @@ const initialState: WizardState = {
   round: { date: getPreviousSunday(), hasAce: false },
   players: [],
   openPlayPlayers: [],
+  entryListOpenPlayPlayers: [],
   kpOnlyPlayers: [],
   slotTeams: [],
   deuces: [],
@@ -113,10 +117,16 @@ function reducer(state: WizardState, action: Action): WizardState {
       return {
         ...state,
         kpOnlyPlayers: action.payload.kpOnlyPlayers,
+        entryListOpenPlayPlayers: action.payload.openPlayPlayers,
         entryListFileName: action.payload.fileName,
       };
     case 'CLEAR_ENTRY_LIST':
-      return { ...state, kpOnlyPlayers: [], entryListFileName: null };
+      return {
+        ...state,
+        kpOnlyPlayers: [],
+        entryListOpenPlayPlayers: [],
+        entryListFileName: null,
+      };
     case 'GO_TO_STEP':
       return { ...state, currentStep: action.payload };
     case 'RESET':

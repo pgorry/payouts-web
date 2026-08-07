@@ -52,22 +52,46 @@ function nameKey(name: string): string {
   return [...parts].sort().join('|');
 }
 
-export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutResults {
-  const kpOnlyRoster = data.kpOnlyPlayers ?? [];
+/**
+ * Remove duplicate players (by name key), keeping the first occurrence, and
+ * drop anyone whose key is in `exclude` (a higher-priority tier).
+ */
+function dedupe<T extends { name: string }>(players: T[], exclude?: Set<string>): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const p of players) {
+    const k = nameKey(p.name);
+    if (exclude?.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    out.push(p);
+  }
+  return out;
+}
 
-  // The entry list is the authority on what a player paid. If someone shows up
-  // on the leaderboard *and* on the entry list as a KP-only ($2) entrant, the
-  // entry list wins — otherwise they'd be charged the full entry and the $2,
-  // and counted twice in the field.
+export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutResults {
+  // The entry list is the authority on what a player paid. A player can be
+  // listed on the leaderboard *and* on the entry list at a partial tier; the
+  // cheaper tier wins so nobody is charged twice or counted twice in the field.
+  // Priority: KP-only ($2) > open-play ($5) > full entry ($15).
+  const kpOnlyRoster = dedupe(data.kpOnlyPlayers ?? []);
   const kpOnlyKeys = new Set(kpOnlyRoster.map(p => nameKey(p.name)));
-  const fullRoster =
-    kpOnlyKeys.size > 0
-      ? data.players.filter(p => !kpOnlyKeys.has(nameKey(p.name)))
-      : data.players;
+
+  // Open play can arrive from two places — the leaderboard's "General Open
+  // Play" sheet and the entry list — so union and dedupe them, dropping anyone
+  // the entry list marks as KP-only.
+  const openPlayRoster = dedupe(data.openPlayPlayers, kpOnlyKeys);
+  const openPlayKeys = new Set(openPlayRoster.map(p => nameKey(p.name)));
+
+  // Anyone the entry list marks as a partial entrant is removed from the full
+  // (paying) field.
+  const fullRoster = data.players.filter(p => {
+    const k = nameKey(p.name);
+    return !kpOnlyKeys.has(k) && !openPlayKeys.has(k);
+  });
 
   const realPlayers = fullRoster.filter(p => !p.isPro);
   const playerCount = realPlayers.length;
-  const openPlayPlayers = data.openPlayPlayers.filter(p => !p.isPro);
+  const openPlayPlayers = openPlayRoster.filter(p => !p.isPro);
   const openPlayCount = openPlayPlayers.length;
   const kpOnlyPlayers = kpOnlyRoster.filter(p => !p.isPro);
   const kpOnlyCount = kpOnlyPlayers.length;
@@ -79,7 +103,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   // against every roster.
   const allEligibleKpPlayers = [
     ...fullRoster,
-    ...data.openPlayPlayers,
+    ...openPlayRoster,
     ...kpOnlyRoster,
   ];
 
@@ -148,7 +172,7 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
 
   const charges = calculateCharges(
     fullRoster,
-    data.openPlayPlayers,
+    openPlayRoster,
     kpOnlyRoster,
     deuces,
     kps,

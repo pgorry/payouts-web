@@ -6,7 +6,7 @@ import type { PlayerCharge } from '@/types';
  */
 export function TierBadge({ tier }: { tier: PlayerCharge['tier'] }) {
   if (tier === 'full') return null;
-  const label = tier === 'kp-only' ? 'KP only' : 'Open play';
+  const label = tier === 'kp-only' ? 'KP only' : 'Deuce + KP';
   return (
     <span className="ml-2 align-middle text-[10px] uppercase tracking-wider text-amber border border-amber/40 rounded px-1.5 py-0.5">
       {label}

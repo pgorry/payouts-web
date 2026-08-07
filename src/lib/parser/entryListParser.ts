@@ -4,11 +4,13 @@ import type { KpOnlyPlayer, Player } from '@/types';
 export interface ParsedEntryList {
   /** Players who paid the full entry fee — the full competition. */
   fullEntryPlayers: Player[];
-  /** Players who paid the KP-only fee. */
+  /** Players who paid the open-play fee ($5): deuce + KP, no slots/par points. */
+  openPlayPlayers: KpOnlyPlayer[];
+  /** Players who paid the KP-only fee ($2). */
   kpOnlyPlayers: KpOnlyPlayer[];
   /** Rows we couldn't classify (unrecognised fee), for a warning in the UI. */
   unknownFeeRows: { name: string; event: string; fee: number }[];
-  /** Distinct fee amounts seen, e.g. [2, 15]. */
+  /** Distinct fee amounts seen, e.g. [2, 5, 15]. */
   feesSeen: number[];
   sheetName: string;
 }
@@ -77,6 +79,7 @@ export function parseEntryListXLS(
   buffer: ArrayBuffer,
   fullEntryFee: number,
   kpOnlyFee: number,
+  openPlayFee: number,
 ): ParsedEntryList {
   const wb = XLSX.read(buffer, { type: 'array' });
 
@@ -90,6 +93,7 @@ export function parseEntryListXLS(
 
     const { headerRow, cols } = found;
     const fullEntryPlayers: Player[] = [];
+    const openPlayPlayers: KpOnlyPlayer[] = [];
     const kpOnlyPlayers: KpOnlyPlayer[] = [];
     const unknownFeeRows: { name: string; event: string; fee: number }[] = [];
     const feesSeen = new Set<number>();
@@ -118,8 +122,12 @@ export function parseEntryListXLS(
         cell => typeof cell === 'string' && cell.toLowerCase().includes('pro for slots'),
       );
 
+      // Classify on the amount paid, not the event label — a renamed event
+      // (e.g. "Wolrige Shield") then can't silently break the split.
       if (fee === kpOnlyFee) {
         kpOnlyPlayers.push({ name, isPro, event });
+      } else if (fee === openPlayFee) {
+        openPlayPlayers.push({ name, isPro, event });
       } else if (fee >= fullEntryFee) {
         fullEntryPlayers.push({ name, isPro });
       } else {
@@ -129,6 +137,7 @@ export function parseEntryListXLS(
 
     return {
       fullEntryPlayers,
+      openPlayPlayers,
       kpOnlyPlayers,
       unknownFeeRows,
       feesSeen: [...feesSeen].sort((a, b) => a - b),

@@ -23,7 +23,7 @@ export const ChargesOnlyCard = forwardRef<HTMLDivElement, ChargesOnlyCardProps>(
             <h1 className="text-teal text-2xl font-bold">UGC Mens Charges</h1>
             <div className="text-text-muted text-base">
               {formatDate(results.date)} • {pool.playerCount} Players
-              {pool.openPlayPlayerCount > 0 && ` + ${pool.openPlayPlayerCount} Open Play`}
+              {pool.openPlayPlayerCount > 0 && ` + ${pool.openPlayPlayerCount} Deuce+KP`}
               {pool.kpOnlyPlayerCount > 0 && ` + ${pool.kpOnlyPlayerCount} KP Only`}
             </div>
           </div>

@@ -17,12 +17,21 @@ export function Step2DataEntry() {
 
   const handleEntryListLoaded = (buffer: ArrayBuffer, fileName: string) => {
     try {
-      const parsed = parseEntryListXLS(buffer, rules.entryFee, rules.kpOnlyEntryFee);
+      const parsed = parseEntryListXLS(
+        buffer,
+        rules.entryFee,
+        rules.kpOnlyEntryFee,
+        rules.openPlayEntryFee,
+      );
       setEntryList(parsed);
       setEntryListError(null);
       dispatch({
         type: 'SET_ENTRY_LIST',
-        payload: { kpOnlyPlayers: parsed.kpOnlyPlayers, fileName },
+        payload: {
+          kpOnlyPlayers: parsed.kpOnlyPlayers,
+          openPlayPlayers: parsed.openPlayPlayers,
+          fileName,
+        },
       });
     } catch (e) {
       setEntryList(null);
@@ -38,7 +47,9 @@ export function Step2DataEntry() {
   };
 
   const kpOnlyCount = entryList?.kpOnlyPlayers.filter(p => !p.isPro).length ?? 0;
+  const openPlayCount = entryList?.openPlayPlayers.filter(p => !p.isPro).length ?? 0;
   const fullEntryCount = entryList?.fullEntryPlayers.filter(p => !p.isPro).length ?? 0;
+  const kpFieldCount = fullEntryCount + openPlayCount + kpOnlyCount;
 
   const handleFileLoaded = (buffer: ArrayBuffer, fileName: string) => {
     try {
@@ -64,7 +75,7 @@ export function Step2DataEntry() {
       const openPlayCount = parsed.openPlayPlayers.filter(p => !p.isPro).length;
       const parts = [
         `${realPlayers.length} players`,
-        openPlayCount > 0 ? `${openPlayCount} open play` : '',
+        openPlayCount > 0 ? `${openPlayCount} deuce+KP` : '',
         proCount > 0 ? `${proCount} pros` : '',
         `${parsed.slotTeams.length} slot teams`,
         `${parsed.deuces.length} deuce winners`,
@@ -136,7 +147,7 @@ export function Step2DataEntry() {
             </div>
             <div className="bg-card-highlight rounded-lg p-3">
               <div className="text-teal font-semibold text-lg">{state.openPlayPlayers.filter(p => !p.isPro).length}</div>
-              <div className="text-text-muted">Open Play</div>
+              <div className="text-text-muted">Deuce + KP</div>
             </div>
             <div className="bg-card-highlight rounded-lg p-3">
               <div className="text-teal font-semibold text-lg">{state.slotTeams.length}</div>
@@ -173,10 +184,11 @@ export function Step2DataEntry() {
         </div>
 
         <p className="text-text-muted text-sm">
-          Only needed when some players didn't buy into the full competition — e.g. a
-          KP-only entry at {formatCurrency(rules.kpOnlyEntryFee)} instead of{' '}
-          {formatCurrency(rules.entryFee)}. Skip this and everyone is charged the full
-          entry, as usual.
+          Only needed when some players didn't buy the full competition. The app
+          splits players by what they paid: {formatCurrency(rules.entryFee)} full
+          entry, {formatCurrency(rules.openPlayEntryFee)} deuce + KP, or{' '}
+          {formatCurrency(rules.kpOnlyEntryFee)} KP only. Skip this and everyone is
+          charged the full entry, as usual.
         </p>
 
         <FileDropZone onFileLoaded={handleEntryListLoaded} />
@@ -189,12 +201,18 @@ export function Step2DataEntry() {
 
         {entryList && (
           <div className="bg-card rounded-xl p-4 space-y-3 border border-border">
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-3 gap-3 text-sm">
               <div className="bg-card-highlight rounded-lg p-3">
                 <div className="text-teal font-semibold text-lg">
                   {fullEntryCount} × {formatCurrency(rules.entryFee)}
                 </div>
                 <div className="text-text-muted">Full Entry</div>
+              </div>
+              <div className="bg-card-highlight rounded-lg p-3">
+                <div className="text-amber font-semibold text-lg">
+                  {openPlayCount} × {formatCurrency(rules.openPlayEntryFee)}
+                </div>
+                <div className="text-text-muted">Deuce + KP</div>
               </div>
               <div className="bg-card-highlight rounded-lg p-3">
                 <div className="text-amber font-semibold text-lg">
@@ -204,21 +222,23 @@ export function Step2DataEntry() {
               </div>
             </div>
 
-            {kpOnlyCount > 0 && (
+            {(kpOnlyCount > 0 || openPlayCount > 0) && (
               <p className="text-xs text-text-dim">
-                KP-only players count toward the KP field ({fullEntryCount + kpOnlyCount}{' '}
-                entrants, which sets the per-KP prize) but not toward slots or par
-                points. Their {formatCurrency(kpOnlyCount * rules.kpOnlyEntryFee)} goes
-                into the general pot.
+                Partial entrants count toward the KP field ({kpFieldCount} entrants,
+                which sets the per-KP prize) but not toward slots or par points.
+                {openPlayCount > 0 &&
+                  ` Deuce + KP players also pay into the deuce pot (${formatCurrency(rules.openPlayDeuceContribution)} each).`}
               </p>
             )}
 
             {entryList.unknownFeeRows.length > 0 && (
               <p className="text-xs text-amber">
                 {entryList.unknownFeeRows.length} row
-                {entryList.unknownFeeRows.length === 1 ? '' : 's'} had a fee that isn't{' '}
-                {formatCurrency(rules.kpOnlyEntryFee)} or {formatCurrency(rules.entryFee)}{' '}
-                and {entryList.unknownFeeRows.length === 1 ? 'was' : 'were'} skipped:{' '}
+                {entryList.unknownFeeRows.length === 1 ? '' : 's'} had an unrecognised fee
+                (not {formatCurrency(rules.entryFee)},{' '}
+                {formatCurrency(rules.openPlayEntryFee)} or{' '}
+                {formatCurrency(rules.kpOnlyEntryFee)}) and{' '}
+                {entryList.unknownFeeRows.length === 1 ? 'was' : 'were'} skipped:{' '}
                 {entryList.unknownFeeRows.slice(0, 3).map(r => r.name).join(', ')}
                 {entryList.unknownFeeRows.length > 3 && '…'}
               </p>

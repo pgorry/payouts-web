@@ -17,7 +17,8 @@ export function Step2Confirm() {
   const { state, dispatch } = usePayout();
   const realPlayers = state.players.filter(p => !p.isPro);
   const proCount = state.players.filter(p => p.isPro).length;
-  const openPlayPlayers = state.openPlayPlayers.filter(p => !p.isPro);
+  const openPlayPlayers = [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers]
+    .filter(p => !p.isPro);
   const { round } = state;
   const currentPlaces = state.rules.splits.length;
   const defaultPlaces = getDefaultPlaces(realPlayers.length);
@@ -74,9 +75,9 @@ export function Step2Confirm() {
     setShowAceSuggestions(false);
   };
 
-  // The ace pays out of the deuce pot, which KP-only entrants don't buy into —
-  // so only full-competition players can be named as the ace winner.
-  const acePlayerNames = realPlayers.map(p => p.name);
+  // The ace pays out of the deuce pot. Full-competition and open-play ($5)
+  // players both buy into it, so both are eligible; KP-only ($2) entrants don't.
+  const acePlayerNames = [...realPlayers, ...openPlayPlayers].map(p => p.name);
   const aceSuggestions = acePlayerNames.filter(name =>
     name.toLowerCase().includes(aceSearch.toLowerCase())
   ).slice(0, 5);
@@ -103,7 +104,7 @@ export function Step2Confirm() {
       {
         round: state.round,
         players: state.players,
-        openPlayPlayers: state.openPlayPlayers,
+        openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
         kpOnlyPlayers: state.kpOnlyPlayers,
         slotTeams: state.slotTeams,
         deuces: state.deuces,
@@ -142,7 +143,9 @@ export function Step2Confirm() {
             <span className="text-text-dim text-xs uppercase tracking-wide">Field</span>
             <div className="text-text font-medium mt-1">
               {realPlayers.length} players
-              {openPlayPlayers.length > 0 && ` + ${openPlayPlayers.length} open play`}
+              {openPlayPlayers.length > 0 && ` + ${openPlayPlayers.length} deuce+KP`}
+              {state.kpOnlyPlayers.filter(p => !p.isPro).length > 0 &&
+                ` + ${state.kpOnlyPlayers.filter(p => !p.isPro).length} KP only`}
               {proCount > 0 && ` + ${proCount} pros`}
             </div>
           </div>
