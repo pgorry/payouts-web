@@ -13,6 +13,7 @@ export function Step5Confirm() {
       {
         round: state.round,
         players: state.players,
+        paidFullPlayers: state.entryListFileName ? state.entryListFullPlayers : undefined,
         openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
         noSlotsPlayers: state.entryListNoSlotsPlayers,
         kpOnlyPlayers: state.kpOnlyPlayers,

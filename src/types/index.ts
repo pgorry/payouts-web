@@ -54,6 +54,14 @@ export interface KPWinner {
 export interface RoundData {
   round: RoundInput;
   players: Player[];
+  /**
+   * Full-entry ($15) players from the entry list, when one was uploaded. When
+   * present this is authoritative for the full-entry field — leaderboard
+   * players absent from it (no-shows who never paid) are excluded from the
+   * field and charges. Undefined when no entry list was uploaded, in which
+   * case `players` (the leaderboard roster) is used instead.
+   */
+  paidFullPlayers?: Player[];
   openPlayPlayers: Player[];
   /** KP-only ($2) entrants, from the optional entry-list upload. */
   kpOnlyPlayers: KpOnlyPlayer[];

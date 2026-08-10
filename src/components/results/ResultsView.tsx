@@ -127,6 +127,7 @@ export function ResultsView() {
       {
         round: state.round,
         players: state.players,
+        paidFullPlayers: state.entryListFileName ? state.entryListFullPlayers : undefined,
         openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
         noSlotsPlayers: state.entryListNoSlotsPlayers,
         kpOnlyPlayers: state.kpOnlyPlayers,
@@ -159,6 +160,7 @@ export function ResultsView() {
       {
         round: state.round,
         players: state.players,
+        paidFullPlayers: state.entryListFileName ? state.entryListFullPlayers : undefined,
         openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
         noSlotsPlayers: state.entryListNoSlotsPlayers,
         kpOnlyPlayers: state.kpOnlyPlayers,

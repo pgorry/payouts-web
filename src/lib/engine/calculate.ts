@@ -90,12 +90,14 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
   );
   const noSlotsKeys = new Set(noSlotsRoster.map(p => nameKey(p.name)));
 
+  // When an entry list was uploaded it is authoritative on who paid the full
+  // entry — leaderboard no-shows who never paid are absent from it and so drop
+  // out of the field. With no entry list, fall back to the leaderboard roster.
+  const fullSource = data.paidFullPlayers ?? data.players;
+
   // Anyone the entry list marks as a partial entrant is removed from the full
   // (paying) field.
-  const fullRoster = data.players.filter(p => {
-    const k = nameKey(p.name);
-    return !kpOnlyKeys.has(k) && !openPlayKeys.has(k) && !noSlotsKeys.has(k);
-  });
+  const fullRoster = dedupe(fullSource, new Set([...kpOnlyKeys, ...openPlayKeys, ...noSlotsKeys]));
 
   const realPlayers = fullRoster.filter(p => !p.isPro);
   const playerCount = realPlayers.length;

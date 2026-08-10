@@ -34,6 +34,12 @@ export interface WizardState {
   entryListOpenPlayPlayers: KpOnlyPlayer[];
   /** No-slots ($10) players from the optional entry-list upload. */
   entryListNoSlotsPlayers: KpOnlyPlayer[];
+  /**
+   * Full-entry ($15) players from the optional entry-list upload. When an entry
+   * list is loaded this is authoritative for the paying field (no-shows on the
+   * leaderboard but absent here are excluded).
+   */
+  entryListFullPlayers: Player[];
   kpOnlyPlayers: KpOnlyPlayer[];
   slotTeams: SlotTeam[];
   deuces: DeuceEntry[];
@@ -56,7 +62,7 @@ type Action =
   | { type: 'SET_KP_WINNERS'; payload: KPWinner[] }
   | { type: 'SET_RULES'; payload: RulesConfig }
   | { type: 'SET_RESULTS'; payload: PayoutResults }
-  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; openPlayPlayers: KpOnlyPlayer[]; noSlotsPlayers: KpOnlyPlayer[]; fileName: string } }
+  | { type: 'SET_ENTRY_LIST'; payload: { kpOnlyPlayers: KpOnlyPlayer[]; openPlayPlayers: KpOnlyPlayer[]; noSlotsPlayers: KpOnlyPlayer[]; fullEntryPlayers: Player[]; fileName: string } }
   | { type: 'CLEAR_ENTRY_LIST' }
   | { type: 'GO_TO_STEP'; payload: number }
   | { type: 'RESET' };
@@ -68,6 +74,7 @@ const initialState: WizardState = {
   openPlayPlayers: [],
   entryListOpenPlayPlayers: [],
   entryListNoSlotsPlayers: [],
+  entryListFullPlayers: [],
   kpOnlyPlayers: [],
   slotTeams: [],
   deuces: [],
@@ -122,6 +129,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         kpOnlyPlayers: action.payload.kpOnlyPlayers,
         entryListOpenPlayPlayers: action.payload.openPlayPlayers,
         entryListNoSlotsPlayers: action.payload.noSlotsPlayers,
+        entryListFullPlayers: action.payload.fullEntryPlayers,
         entryListFileName: action.payload.fileName,
       };
     case 'CLEAR_ENTRY_LIST':
@@ -130,6 +138,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         kpOnlyPlayers: [],
         entryListOpenPlayPlayers: [],
         entryListNoSlotsPlayers: [],
+        entryListFullPlayers: [],
         entryListFileName: null,
       };
     case 'GO_TO_STEP':

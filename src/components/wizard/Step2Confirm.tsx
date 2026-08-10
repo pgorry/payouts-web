@@ -15,10 +15,14 @@ interface KpRow {
 
 export function Step2Confirm() {
   const { state, dispatch } = usePayout();
-  const realPlayers = state.players.filter(p => !p.isPro);
+  // When an entry list is loaded it is authoritative on who paid the full
+  // entry; otherwise the leaderboard roster is the field.
+  const fullSource = state.entryListFileName ? state.entryListFullPlayers : state.players;
+  const realPlayers = fullSource.filter(p => !p.isPro);
   const proCount = state.players.filter(p => p.isPro).length;
   const openPlayPlayers = [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers]
     .filter(p => !p.isPro);
+  const noSlotsPlayers = state.entryListNoSlotsPlayers.filter(p => !p.isPro);
   const { round } = state;
   const currentPlaces = state.rules.splits.length;
   const defaultPlaces = getDefaultPlaces(realPlayers.length);
@@ -75,9 +79,10 @@ export function Step2Confirm() {
     setShowAceSuggestions(false);
   };
 
-  // The ace pays out of the deuce pot. Full-competition and open-play ($5)
-  // players both buy into it, so both are eligible; KP-only ($2) entrants don't.
-  const acePlayerNames = [...realPlayers, ...openPlayPlayers].map(p => p.name);
+  // The ace pays out of the deuce pot. Full-competition, twosome ($10) and
+  // open-play ($5) players all buy into it, so all are eligible; KP-only ($2)
+  // entrants don't.
+  const acePlayerNames = [...realPlayers, ...noSlotsPlayers, ...openPlayPlayers].map(p => p.name);
   const aceSuggestions = acePlayerNames.filter(name =>
     name.toLowerCase().includes(aceSearch.toLowerCase())
   ).slice(0, 5);
@@ -104,6 +109,7 @@ export function Step2Confirm() {
       {
         round: state.round,
         players: state.players,
+        paidFullPlayers: state.entryListFileName ? state.entryListFullPlayers : undefined,
         openPlayPlayers: [...state.openPlayPlayers, ...state.entryListOpenPlayPlayers],
         noSlotsPlayers: state.entryListNoSlotsPlayers,
         kpOnlyPlayers: state.kpOnlyPlayers,
@@ -144,6 +150,7 @@ export function Step2Confirm() {
             <span className="text-text-dim text-xs uppercase tracking-wide">Field</span>
             <div className="text-text font-medium mt-1">
               {realPlayers.length} players
+              {noSlotsPlayers.length > 0 && ` + ${noSlotsPlayers.length} twosome`}
               {openPlayPlayers.length > 0 && ` + ${openPlayPlayers.length} deuce+KP`}
               {state.kpOnlyPlayers.filter(p => !p.isPro).length > 0 &&
                 ` + ${state.kpOnlyPlayers.filter(p => !p.isPro).length} KP only`}

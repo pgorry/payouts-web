@@ -32,6 +32,7 @@ export function Step2DataEntry() {
           kpOnlyPlayers: parsed.kpOnlyPlayers,
           openPlayPlayers: parsed.openPlayPlayers,
           noSlotsPlayers: parsed.noSlotsPlayers,
+          fullEntryPlayers: parsed.fullEntryPlayers,
           fileName,
         },
       });
