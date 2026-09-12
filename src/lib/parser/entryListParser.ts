@@ -10,6 +10,12 @@ export interface ParsedEntryList {
   noSlotsPlayers: KpOnlyPlayer[];
   /** Players who paid the KP-only fee ($2). */
   kpOnlyPlayers: KpOnlyPlayer[];
+  /**
+   * Entrants the sheet marks as a no-show ("NS") and charges nothing. They are
+   * excluded from every paying roster — same as being absent from the list —
+   * but tracked separately so they aren't reported as an unrecognised fee.
+   */
+  noShowPlayers: { name: string; event: string }[];
   /** Rows we couldn't classify (unrecognised fee), for a warning in the UI. */
   unknownFeeRows: { name: string; event: string; fee: number }[];
   /** Distinct fee amounts seen, e.g. [2, 5, 15]. */
@@ -20,12 +26,48 @@ export interface ParsedEntryList {
 const HEADER_ALIASES: Record<string, string[]> = {
   lastName: ['last name', 'last', 'surname'],
   firstName: ['first name', 'first', 'given name'],
+  /**
+   * Some exports (the hand-built "Player List and Slots Charges" sheet) carry a
+   * single pre-formatted "Last, First" column instead of split name columns.
+   */
+  name: ['player', 'name', 'player name', 'golfer'],
   event: ['event', 'competition', 'comp'],
-  fee: ['extra $$$', 'extra $', 'extra', 'fee', 'entry', 'amount', 'paid', '$'],
+  fee: [
+    'extra $$$',
+    'extra $',
+    'extra',
+    'fee',
+    'entry',
+    'amount',
+    'paid',
+    '$',
+    'to be charged',
+    'to charge',
+    'charged',
+    'charge',
+  ],
 };
+
+/**
+ * Trailing tally rows the sheets end with — "33 total", "31 full $15", "2 @ $10",
+ * "Total Purse Allocated:". They land in the name column on some exports, so a
+ * blank-name check alone isn't enough to skip them.
+ */
+const SUMMARY_ROW = /^(total\b|total purse|\d+\s*(total|full|@))/i;
+
+/** Markers for an entrant who showed up on the list but is charged nothing. */
+const NO_SHOW = /^(ns|n\/s|dns|no.?show)$/i;
 
 function normalise(s: unknown): string {
   return String(s ?? '').trim().toLowerCase();
+}
+
+function isSummaryRow(name: string): boolean {
+  return SUMMARY_ROW.test(name.trim());
+}
+
+function isNoShowRow(row: unknown[]): boolean {
+  return row.some(cell => typeof cell === 'string' && NO_SHOW.test(cell.trim()));
 }
 
 /** Locate the header row and map each logical column to its index. */
@@ -35,17 +77,26 @@ function findColumns(rows: unknown[][]): { headerRow: number; cols: Record<strin
     if (!row) continue;
     const cells = row.map(normalise);
 
+    // Match aliases in priority order, not column order: a sheet carrying both
+    // "Extra $$$" and "Charged" resolves to the former wherever each sits.
     const cols: Record<string, number> = {};
     for (const [key, aliases] of Object.entries(HEADER_ALIASES)) {
-      const idx = cells.findIndex(c => c && aliases.includes(c));
-      if (idx >= 0) cols[key] = idx;
+      for (const alias of aliases) {
+        const idx = cells.findIndex(c => c === alias);
+        if (idx >= 0) {
+          cols[key] = idx;
+          break;
+        }
+      }
     }
 
-    // A usable entry list needs a name and a fee. The Event column is optional —
-    // newer exports ("Alphabetical Player List") drop it in favour of an Amount
-    // column and a "Club Category Type" column, and we classify on the amount
-    // paid regardless.
-    if (cols.lastName !== undefined && cols.fee !== undefined) {
+    // A usable entry list needs a name and a fee. The name can arrive either as
+    // split Last/First columns or as one combined "Player" column. The Event
+    // column is optional — newer exports ("Alphabetical Player List") drop it in
+    // favour of an Amount column and a "Club Category Type" column, and we
+    // classify on the amount paid regardless.
+    const hasName = cols.lastName !== undefined || cols.name !== undefined;
+    if (hasName && cols.fee !== undefined) {
       return { headerRow: i, cols };
     }
   }
@@ -70,12 +121,18 @@ export function isEntryList(buffer: ArrayBuffer): boolean {
 }
 
 /**
- * Parse the club's "Alphabetical Player List" export.
+ * Parse an entry list — a flat roster of who paid what.
  *
- * Shape: one row per entrant, with an Event column ("LvR", "Slots", …) and an
- * "Extra $$$" column holding what they actually paid. We classify purely on the
- * amount paid rather than the event label, so a renamed event doesn't silently
- * break the split.
+ * Two shapes are accepted, detected from the header row:
+ *  - the club's "Alphabetical Player List" export: split Last Name / First Name
+ *    columns, an Event column ("LvR", "Slots", …) and an "Extra $$$" column;
+ *  - the hand-built "Player List and Slots Charges" sheet: a single "Player"
+ *    column already in "Last, First" order and a "To be charged" column.
+ *
+ * Either way we classify purely on the amount paid rather than the event label,
+ * so a renamed event doesn't silently break the split. Rows marked "NS" are
+ * charged nothing and drop out of the field; the tally rows the sheets end with
+ * ("33 total", "2 @ $10") are ignored.
  *
  * Names are emitted as "Last, First" to match the leaderboard's format; the
  * engine's name resolver handles the other direction anyway.
@@ -102,6 +159,7 @@ export function parseEntryListXLS(
     const openPlayPlayers: KpOnlyPlayer[] = [];
     const noSlotsPlayers: KpOnlyPlayer[] = [];
     const kpOnlyPlayers: KpOnlyPlayer[] = [];
+    const noShowPlayers: { name: string; event: string }[] = [];
     const unknownFeeRows: { name: string; event: string; fee: number }[] = [];
     const feesSeen = new Set<number>();
 
@@ -109,17 +167,36 @@ export function parseEntryListXLS(
       const row = rows[i];
       if (!row) continue;
 
-      const last = String(row[cols.lastName] ?? '').trim();
+      const last =
+        cols.lastName !== undefined ? String(row[cols.lastName] ?? '').trim() : '';
       const first =
         cols.firstName !== undefined ? String(row[cols.firstName] ?? '').trim() : '';
-      if (!last && !first) continue; // blank separator row
+      const combined =
+        cols.name !== undefined ? String(row[cols.name] ?? '').trim() : '';
 
-      const name = first ? `${last}, ${first}` : last;
-      const event = String(row[cols.event] ?? '').trim();
+      // Split columns win when present; the combined "Player" column is the
+      // fallback for sheets that don't have them.
+      let name: string;
+      if (last || first) {
+        name = first ? `${last}, ${first}` : last;
+      } else {
+        name = combined;
+      }
+
+      if (!name) continue; // blank separator or tally row with no name
+      if (isSummaryRow(name)) continue; // "33 total", "31 full $15", …
+
+      const event = cols.event !== undefined ? String(row[cols.event] ?? '').trim() : '';
 
       const fee = Number(row[cols.fee]);
       if (isNaN(fee) || fee <= 0) {
-        unknownFeeRows.push({ name, event, fee: 0 });
+        // A no-show is deliberately charged nothing — record it, but don't
+        // raise it as an unrecognised fee.
+        if (isNoShowRow(row)) {
+          noShowPlayers.push({ name, event });
+        } else {
+          unknownFeeRows.push({ name, event, fee: 0 });
+        }
         continue;
       }
       feesSeen.add(fee);
@@ -149,6 +226,7 @@ export function parseEntryListXLS(
       openPlayPlayers,
       noSlotsPlayers,
       kpOnlyPlayers,
+      noShowPlayers,
       unknownFeeRows,
       feesSeen: [...feesSeen].sort((a, b) => a - b),
       sheetName,
@@ -156,6 +234,8 @@ export function parseEntryListXLS(
   }
 
   throw new Error(
-    "That doesn't look like an entry list — no sheet with Last Name / Event / Extra $$$ columns.",
+    "That doesn't look like an entry list — no sheet with a player name column " +
+      '(Last Name, or a combined Player column) and a fee column (Extra $$$, ' +
+      'Amount, or To be charged).',
   );
 }

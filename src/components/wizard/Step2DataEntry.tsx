@@ -244,6 +244,17 @@ export function Step2DataEntry() {
               </p>
             )}
 
+            {entryList.noShowPlayers.length > 0 && (
+              <p className="text-xs text-text-dim">
+                {entryList.noShowPlayers.length} no-show
+                {entryList.noShowPlayers.length === 1 ? '' : 's'} on the sheet
+                {entryList.noShowPlayers.length === 1 ? ' was' : ' were'} charged
+                nothing and left out of the field:{' '}
+                {entryList.noShowPlayers.slice(0, 3).map(r => r.name).join(', ')}
+                {entryList.noShowPlayers.length > 3 && '…'}
+              </p>
+            )}
+
             {entryList.unknownFeeRows.length > 0 && (
               <p className="text-xs text-amber">
                 {entryList.unknownFeeRows.length} row
