@@ -15,7 +15,10 @@ import { UnbalancedBanner, UnbalancedConfirmModal } from './UnbalancedWarning';
 
 function buildGmailLink(dateStr: string): string {
   const formattedDate = formatDate(dateStr);
-  const to = 'dbyrne@universitygolf.com';
+  const to = [
+    'dbyrne@universitygolf.com',
+    'accounting@universitygolf.com',
+  ].join(',');
   const cc = [
     'derrick.horne@gmail.com',
     'fritzkeswick@yahoo.ca',
