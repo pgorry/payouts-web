@@ -4,6 +4,7 @@ import { FileDropZone } from '@/components/shared/FileDropZone';
 import { parseLeagueXLS } from '@/lib/parser/xlsParser';
 import { parseEntryListXLS, type ParsedEntryList } from '@/lib/parser/entryListParser';
 import { formatCurrency } from '@/lib/format';
+import { LeaderboardWarnings } from '@/components/shared/LeaderboardWarnings';
 
 export function Step2DataEntry() {
   const { state, dispatch } = usePayout();
@@ -73,6 +74,7 @@ export function Step2DataEntry() {
           parPointWinners: parsed.parPointWinners,
           kpWinners: parsed.kpWinners,
           kpHoles: parsed.kpHoles,
+          warnings: parsed.warnings,
         },
       });
 
@@ -140,6 +142,8 @@ export function Step2DataEntry() {
           {summary}
         </div>
       )}
+
+      {state.xlsLoaded && <LeaderboardWarnings warnings={state.leaderboardWarnings} />}
 
       {state.xlsLoaded && (
         <div className="bg-card rounded-xl p-4 space-y-3 border border-border">

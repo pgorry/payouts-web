@@ -48,13 +48,15 @@ export interface WizardState {
   rules: RulesConfig;
   results: PayoutResults | null;
   xlsLoaded: boolean;
+  /** Expected leaderboards missing from the uploaded export, and similar oddities. */
+  leaderboardWarnings: string[];
   /** Name of the optional entry-list file, if one was uploaded. */
   entryListFileName: string | null;
 }
 
 type Action =
   | { type: 'SET_ROUND'; payload: RoundInput }
-  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; openPlayPlayers: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[]; kpHoles: string[] } }
+  | { type: 'SET_XLS_DATA'; payload: { players: Player[]; openPlayPlayers: Player[]; slotTeams: SlotTeam[]; deuces: DeuceEntry[]; parPointWinners: ParPointWinner[]; kpWinners: KPWinner[]; kpHoles: string[]; warnings: string[] } }
   | { type: 'SET_PLAYERS'; payload: Player[] }
   | { type: 'SET_SLOT_TEAMS'; payload: SlotTeam[] }
   | { type: 'SET_DEUCES'; payload: DeuceEntry[] }
@@ -83,6 +85,7 @@ const initialState: WizardState = {
   rules: DEFAULT_RULES,
   results: null,
   xlsLoaded: false,
+  leaderboardWarnings: [],
   entryListFileName: null,
 };
 
@@ -106,6 +109,7 @@ function reducer(state: WizardState, action: Action): WizardState {
         parPointWinners: action.payload.parPointWinners,
         kpWinners: action.payload.kpWinners,
         xlsLoaded: true,
+        leaderboardWarnings: action.payload.warnings,
         rules: { ...state.rules, splits: SPLIT_PRESETS[defaultPlaces], kpHoles },
       };
     }

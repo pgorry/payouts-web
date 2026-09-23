@@ -11,6 +11,11 @@ export interface ParsedXLS {
   /** KP holes detected in the file, in sheet order (e.g. ['#2','#7',...]). */
   kpHoles: string[];
   sheetNames: string[];
+  /**
+   * Leaderboards we expected but couldn't find (or found empty), and other
+   * oddities worth a human look, e.g. a KP sheet listing more than one player.
+   */
+  warnings: string[];
 }
 
 function findSheet(wb: XLSX.WorkBook, prefix: string): XLSX.WorkSheet | undefined {
@@ -30,14 +35,44 @@ export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
   // back to the plain "par points" sheet for the old format.
   const parPointsSheet =
     findSheet(wb, 'modified scoring par points') ?? findSheet(wb, 'par points');
+  const slotsSheet = findSheet(wb, 'sunday slots');
+  const deuceSheet = findSheet(wb, 'deuce pot');
   const players = parseParPointsSheet(parPointsSheet);
   const parPointWinners = extractParPointWinners(parPointsSheet);
   const openPlayPlayers = parseOpenPlaySheet(findSheet(wb, 'general open play'));
-  const slotTeams = parseSlotsSheet(findSheet(wb, 'sunday slots'), players);
-  const deuces = parseDeucesSheet(findSheet(wb, 'deuce pot'));
-  const { kpWinners, kpHoles } = parseKPSheets(wb);
+  const slotTeams = parseSlotsSheet(slotsSheet, players);
+  const deuces = parseDeucesSheet(deuceSheet);
+  const { kpWinners, kpHoles, extraKpEntries } = parseKPSheets(wb);
 
-  return { players, openPlayPlayers, parPointWinners, slotTeams, deuces, kpWinners, kpHoles, sheetNames };
+  // Every Sunday export should carry these leaderboards. A missing one means
+  // its pot is collected but never paid out, so flag it loudly.
+  const warnings: string[] = [];
+  if (!parPointsSheet) {
+    warnings.push('No "Par Points" leaderboard — the player roster and par points winners are missing.');
+  } else if (players.length === 0) {
+    warnings.push('The "Par Points" leaderboard is empty — no players were found.');
+  }
+  if (!slotsSheet) {
+    warnings.push('No "Sunday Slots" leaderboard — the slots pool will not be paid out.');
+  } else if (slotTeams.length === 0) {
+    warnings.push('The "Sunday Slots" leaderboard has no teams — the slots pool will not be paid out.');
+  }
+  if (!deuceSheet) {
+    warnings.push(
+      'No "Deuce Pot" leaderboard — the deuce pot will not be paid out. ' +
+        'Add the Deuce Pot tournament to the round in Golf Genius and re-export.',
+    );
+  }
+  if (kpHoles.length === 0) {
+    warnings.push('No KP leaderboards (sheets named "KP #…") — enter KP winners by hand.');
+  }
+  for (const { hole, players: names } of extraKpEntries) {
+    warnings.push(
+      `KP ${hole} lists ${names.length} players (${names.join(' / ')}) — only ${names[0]} was used.`,
+    );
+  }
+
+  return { players, openPlayPlayers, parPointWinners, slotTeams, deuces, kpWinners, kpHoles, sheetNames, warnings };
 }
 
 /**
@@ -45,9 +80,15 @@ export function parseLeagueXLS(buffer: ArrayBuffer): ParsedXLS {
  * The hole label is whatever follows "kp" in the sheet name, e.g. "KP #2" → "#2".
  * This way weeks with more than the usual four KPs are picked up automatically.
  */
-function parseKPSheets(wb: XLSX.WorkBook): { kpWinners: KPWinner[]; kpHoles: string[] } {
+function parseKPSheets(wb: XLSX.WorkBook): {
+  kpWinners: KPWinner[];
+  kpHoles: string[];
+  /** Holes whose sheet lists more than one player — a KP has one winner. */
+  extraKpEntries: { hole: string; players: string[] }[];
+} {
   const kpWinners: KPWinner[] = [];
   const kpHoles: string[] = [];
+  const extraKpEntries: { hole: string; players: string[] }[] = [];
 
   for (const sheetName of wb.SheetNames) {
     const match = sheetName.trim().match(/^kp\b\s*(.*)$/i);
@@ -63,18 +104,19 @@ function parseKPSheets(wb: XLSX.WorkBook): { kpWinners: KPWinner[]; kpHoles: str
     const sheet = wb.Sheets[sheetName];
     const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { header: 1 }) as unknown as unknown[][];
     // Row 0 = header "Pos | Player | Details", row 1 = first winner
+    const names: string[] = [];
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i];
       if (!row || row.length < 2) continue;
       const name = String(row[1] ?? '').trim();
-      if (name && name !== 'Total Purse Allocated:') {
-        kpWinners.push({ hole, player: name });
-        break; // only take the first winner per hole
-      }
+      if (name && name !== 'Total Purse Allocated:') names.push(name);
     }
+    // Only the first winner per hole is used; more than one is flagged.
+    if (names.length > 0) kpWinners.push({ hole, player: names[0] });
+    if (names.length > 1) extraKpEntries.push({ hole, players: names });
   }
 
-  return { kpWinners, kpHoles };
+  return { kpWinners, kpHoles, extraKpEntries };
 }
 
 function parseParPointsSheet(sheet: XLSX.WorkSheet | undefined): Player[] {

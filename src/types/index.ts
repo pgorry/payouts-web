@@ -187,6 +187,21 @@ export interface PlayerCharge {
   tier: 'full' | 'open-play' | 'no-slots' | 'kp-only';
 }
 
+/**
+ * Money in (entry fees charged) vs money out (winnings paid to players who
+ * were charged). Any gap means a pot was collected but not fully paid, or a
+ * prize went to someone who isn't in the field.
+ */
+export interface Reconciliation {
+  moneyIn: number;
+  moneyOut: number;
+  /** moneyIn - moneyOut. Positive = money left over; negative = overpaid. */
+  difference: number;
+  balanced: boolean;
+  /** Plain-English reasons for the gap, when we can pin them down. */
+  issues: string[];
+}
+
 export interface PayoutResults {
   date: string;
   pool: MoneyPool;
@@ -198,4 +213,5 @@ export interface PayoutResults {
   totalPaidOut: number;
   kpsReserved: number;
   kpReturnedToPot: number;
+  reconciliation: Reconciliation;
 }

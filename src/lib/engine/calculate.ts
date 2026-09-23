@@ -4,6 +4,7 @@ import { calculateDeuces } from './deuces';
 import { calculateSlots } from './slots';
 import { calculateParPoints } from './parPoints';
 import { calculateCharges } from './charges';
+import { reconcile } from './reconcile';
 
 /**
  * Match a KP winner name to a player in the list, handling "First Last" vs "Last, First" formats.
@@ -200,6 +201,17 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
 
   const totalPaidOut = charges.reduce((sum, c) => sum + c.won, 0);
 
+  const reconciliation = reconcile({
+    charges,
+    deucePot: pool.deucePot,
+    deuces,
+    kps,
+    slots,
+    slotsPool: adjustedSlotsPool,
+    parPoints,
+    parPointsPool: adjustedParPointsPool,
+  });
+
   return {
     date: data.round.date,
     pool,
@@ -211,5 +223,6 @@ export function calculatePayouts(data: RoundData, rules: RulesConfig): PayoutRes
     totalPaidOut,
     kpsReserved: 0,
     kpReturnedToPot,
+    reconciliation,
   };
 }

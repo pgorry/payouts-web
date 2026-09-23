@@ -4,6 +4,7 @@ import { calculatePayouts } from '@/lib/engine/calculate';
 import { formatPlace } from '@/lib/format';
 import { SPLIT_PRESETS, getDefaultPlaces } from '@/lib/rules/defaults';
 import { PlacesInfoTooltip } from '@/components/shared/PlacesInfoTooltip';
+import { LeaderboardWarnings } from '@/components/shared/LeaderboardWarnings';
 import type { KPWinner } from '@/types';
 
 interface KpRow {
@@ -131,6 +132,8 @@ export function Step2Confirm() {
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-teal">Confirm & Calculate</h2>
+
+      <LeaderboardWarnings warnings={state.leaderboardWarnings} />
 
       {/* Date */}
       <div className="bg-card rounded-xl p-4 border border-border space-y-3">

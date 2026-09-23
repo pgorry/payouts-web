@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/format';
 import { calculatePayouts } from '@/lib/engine/calculate';
 import { SPLIT_PRESETS } from '@/lib/rules/defaults';
 import type { KPWinner } from '@/types';
+import { UnbalancedBanner, UnbalancedConfirmModal } from './UnbalancedWarning';
 
 function buildGmailLink(dateStr: string): string {
   const formattedDate = formatDate(dateStr);
@@ -26,16 +27,22 @@ function buildGmailLink(dateStr: string): string {
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&cc=${encodeURIComponent(cc)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-function CopyButton({ elementRef }: { elementRef: React.RefObject<HTMLDivElement | null> }) {
+function CopyButton({
+  elementRef,
+  guard,
+}: {
+  elementRef: React.RefObject<HTMLDivElement | null>;
+  guard: (label: string, action: () => void) => void;
+}) {
   const [copied, setCopied] = useState(false);
   return (
     <button
-      onClick={async () => {
+      onClick={() => guard('Copy', async () => {
         if (!elementRef.current) return;
         await copyCardToClipboard(elementRef.current);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      }}
+      })}
       className="bg-teal/10 text-teal border border-teal/30 font-medium px-4 py-2 rounded-lg hover:bg-teal/20 transition-colors text-sm"
     >
       {copied ? '✓ Copied' : '📋 Copy'}
@@ -79,6 +86,9 @@ export function ResultsView() {
   const [kpSuggestions, setKpSuggestions] = useState<string[]>([]);
   const [kpActiveRow, setKpActiveRow] = useState<number | null>(null);
   const kpRowId = useRef(0);
+  // An export/send action held back until the user confirms past the
+  // "doesn't balance" warning.
+  const [pendingAction, setPendingAction] = useState<{ label: string; run: () => void } | null>(null);
 
   const playerNames = state.players.filter(p => !p.isPro).map(p => p.name);
 
@@ -146,6 +156,13 @@ export function ResultsView() {
 
   const currentPlaces = state.rules.splits.length;
   const dateStr = state.results.date;
+  const rec = state.results.reconciliation;
+
+  // Anything that sends payouts out of the app goes through here.
+  const guard = (label: string, run: () => void) => {
+    if (rec.balanced) run();
+    else setPendingAction({ label, run });
+  };
 
   // KP allocation summary for the bar / editor (derived from computed results).
   const kpResults = state.results.kps;
@@ -211,14 +228,12 @@ export function ResultsView() {
             <span className="text-text-dim text-xs">{state.rules.splits.join('/')}%</span>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href={buildGmailLink(dateStr)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              onClick={() => guard('Email', () => window.open(buildGmailLink(dateStr), '_blank', 'noopener,noreferrer'))}
               className="bg-teal/10 text-teal border border-teal/30 font-medium px-4 py-2 rounded-lg hover:bg-teal/20 transition-colors text-sm inline-flex items-center gap-2"
             >
               ✉️ Email Payouts
-            </a>
+            </button>
             <button
               onClick={() => dispatch({ type: 'RESET' })}
               className="bg-card border border-border-accent text-text-muted font-medium px-4 py-2 rounded-lg hover:border-teal/50 transition-colors text-sm"
@@ -246,16 +261,33 @@ export function ResultsView() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <CopyButton elementRef={activeRef} />
+            <CopyButton elementRef={activeRef} guard={guard} />
             <button
-              onClick={() => activeRef.current && exportCardAsPNG(activeRef.current, activeFilename)}
+              onClick={() => guard('Download', () => {
+                if (activeRef.current) exportCardAsPNG(activeRef.current, activeFilename);
+              })}
               className="bg-teal/10 text-teal border border-teal/30 font-medium px-4 py-2 rounded-lg hover:bg-teal/20 transition-colors text-sm"
             >
               📥 Download
             </button>
           </div>
         </div>
+
+        {!rec.balanced && <UnbalancedBanner rec={rec} />}
       </div>
+
+      {pendingAction && (
+        <UnbalancedConfirmModal
+          rec={rec}
+          actionLabel={pendingAction.label}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={() => {
+            const { run } = pendingAction;
+            setPendingAction(null);
+            run();
+          }}
+        />
+      )}
 
       {/* KP allocation bar */}
       {!showKPEditor && (
